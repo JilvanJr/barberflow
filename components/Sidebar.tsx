@@ -2,7 +2,7 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../App';
 import type { Page } from '../App';
-import { Role } from '../types';
+import { Role, Permissions } from '../types';
 import { MustacheIcon, BuildingIcon, HomeIcon, CalendarIcon, UsersIcon, ScissorsIcon, DollarSignIcon, ShieldCheckIcon } from './icons';
 
 const Sidebar: React.FC = () => {
@@ -17,7 +17,8 @@ const Sidebar: React.FC = () => {
     }
 
     // FIX: Type error on 'Home' is resolved by updating Page type in App.tsx
-    const navItems: { name: Page; icon: React.FC<{ className?: string }>; permissionKey: keyof typeof currentUser.permissions | null }[] = [
+    // FIX: Corrected the type for permissionKey to avoid build errors. It now correctly uses the Permissions interface.
+    const navItems: { name: Page; icon: React.FC<{ className?: string }>; permissionKey: keyof Permissions | null }[] = [
         { name: 'Home', icon: HomeIcon, permissionKey: 'canViewAgenda' },
         { name: 'Agenda', icon: CalendarIcon, permissionKey: 'canViewAgenda' },
         { name: 'Clientes', icon: UsersIcon, permissionKey: 'canViewClients' },
