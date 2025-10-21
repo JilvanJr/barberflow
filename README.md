@@ -1,67 +1,99 @@
-
 # BarberFlow - Sistema de Gerenciamento para Barbearias
 
-## Visão Geral
+## Parte 1: Documentação Técnica
 
-BarberFlow é uma aplicação web moderna e intuitiva, projetada para ser um sistema de gerenciamento completo para barbearias de pequeno e médio porte. O objetivo é fornecer uma ferramenta centralizada que ajuda barbeiros a otimizar suas operações diárias, desde o agendamento de clientes até o controle financeiro.
+Esta seção foca na arquitetura, tecnologias e estrutura do projeto, destinada a desenvolvedores e colaboradores técnicos.
 
-A interface foi construída com foco na experiência do usuário (UX), resultando em um painel de controle limpo, visualmente agradável e fácil de usar, inspirado nos layouts de sistemas de gestão de ponta.
+### 1.1. Arquitetura da Solução
 
-## Funcionalidades Principais
+O BarberFlow é projetado como uma aplicação **Single-Page Application (SPA)** com uma arquitetura de cliente-servidor desacoplada.
 
-A aplicação é dividida em quatro módulos principais, acessíveis através de uma navegação lateral clara e concisa:
+-   **Frontend (Cliente):** Uma aplicação rica e interativa construída com **React** e **TypeScript**. É responsável por toda a renderização da interface do usuário (UI) e pela experiência do usuário (UX). Ele não contém lógica de negócio crítica e consome dados de uma API externa.
+-   **Backend (Servidor):** Uma **API RESTful** robusta construída com **Spring Boot (Java)**. É responsável pela lógica de negócio, persistência de dados, autenticação e autorização. O frontend é totalmente agnóstico em relação à implementação do backend, desde que o contrato da API seja respeitado.
+-   **Comunicação:** A comunicação entre o frontend e o backend ocorre exclusivamente via requisições HTTP, com dados trafegando no formato **JSON**.
 
-### 1. Agenda
+Atualmente, para permitir o desenvolvimento e a demonstração completa do frontend sem a necessidade de um servidor Java ativo, foi implementada uma **camada de API simulada (Mock API)** em TypeScript. Esta camada simula perfeitamente as requisições de rede, respostas e o comportamento de um backend real, facilitando a transição para a API definitiva.
 
-O coração do sistema. A agenda oferece uma visualização clara dos compromissos do dia, organizada por profissional.
+### 1.2. Frontend (React)
 
-- **Visualização por Colunas:** Cada barbeiro tem sua própria coluna, facilitando a visualização da carga de trabalho individual.
-- **Linha do Tempo:** Uma linha do tempo vertical marca as horas, permitindo um encaixe preciso dos agendamentos.
-- **Filtros Avançados:** É possível filtrar a visualização por data, profissional, tipo de serviço e buscar por clientes específicos.
-- **Agendamento Rápido:** Um botão de "Novo Agendamento" permite adicionar novos compromissos de forma eficiente.
-- **Navegação de Datas:** Inclui um seletor de data com calendário para planejar semanas e meses à frente.
+-   **Linguagem/Framework:** React 18+ com TypeScript.
+-   **Estilização:** Tailwind CSS, utilizado para criar uma UI customizada e consistente de forma utilitária.
+-   **Gerenciamento de Estado Global:** React Context API (`useContext`) para gerenciar o estado de autenticação (usuário logado, token) e a página ativa, mantendo a solução leve e sem dependências externas de gerenciamento de estado.
+-   **Comunicação com API:** As chamadas à API são abstraídas em uma camada de serviço (`src/api.ts`). Esta camada é responsável por encapsular a lógica de requisição, manipulação de headers (como `Authorization`) e simulação de latência de rede.
+-   **Estrutura de Componentes:** A UI é organizada em componentes funcionais e reutilizáveis (ícones, modais, botões) e páginas que representam cada módulo do sistema.
 
-### 2. Clientes
+### 1.3. Backend (API Spring Boot - Planejado)
 
-Um CRM simples para gerenciar a base de clientes da barbearia.
+-   **Linguagem/Framework:** Java 17+ com Spring Boot 3+.
+-   **Arquitetura:** API RESTful com arquitetura em camadas (Controller, Service, Repository).
+-   **Persistência de Dados:** Spring Data JPA com Hibernate, conectado a um banco de dados relacional (como PostgreSQL ou MySQL). Para desenvolvimento, pode-se usar um banco em memória como o H2.
+-   **Segurança:** Spring Security para gerenciar a autenticação e autorização. A autenticação é baseada em **JSON Web Tokens (JWT)**, garantindo que a API seja stateless. As permissões granulares de cada usuário são validadas em cada endpoint protegido.
+-   **Validação:** Bean Validation para validar os dados de entrada (DTOs) nas camadas de Controller.
+-   **Endpoints Principais (Exemplos):**
+    -   `POST /api/auth/login`: Autentica um usuário e retorna um JWT.
+    -   `GET, POST /api/appointments`: Gerencia agendamentos.
+    -   `GET, POST, PUT, DELETE /api/clients`: CRUD de clientes.
+    -   `PUT /api/users/{id}/permissions`: Atualiza as permissões de um usuário.
 
-- **Listagem Completa:** Todos os clientes são listados em uma tabela organizada com informações essenciais (Nome, Data de Nascimento, Telefone, E-mail).
-- **Busca Rápida:** Um campo de busca permite encontrar clientes por nome ou CPF instantaneamente.
-- **Gerenciamento de Clientes:** Ações rápidas para editar informações ou remover um cliente do sistema.
-- **Cadastro de Novos Clientes:** Um fluxo simples para adicionar novos clientes à base de dados.
+---
 
-### 3. Serviços
+## Parte 2: Documentação Funcional
 
-Módulo para cadastrar e gerenciar os serviços oferecidos pela barbearia.
+Esta seção foca nas funcionalidades, regras de negócio e visão de produto do BarberFlow.
 
-- **Catálogo de Serviços:** Uma lista clara de todos os serviços com seus respectivos valores.
-- **Gerenciamento de Preços:** Ações para editar o nome e o preço de um serviço ou excluí-lo.
-- **Cadastro Simples:** Facilidade para adicionar novos serviços ao catálogo conforme o negócio evolui.
+### 2.1. Visão Geral do Produto
 
-### 4. Fluxo de Caixa (Acesso Restrito)
+BarberFlow é um sistema de gestão completo para barbearias de pequeno e médio porte. O objetivo é centralizar e otimizar as operações diárias, oferecendo ferramentas intuitivas para gerenciar agendamentos, clientes, serviços e finanças em uma única plataforma. A aplicação possui dois portais distintos: um portal administrativo para a equipe (administradores e barbeiros) e um portal para clientes.
 
-Uma ferramenta financeira visual para o controle de entradas e saídas, acessível apenas pelo administrador (dono da barbearia).
+### 2.2. Módulos e Funcionalidades
 
-- **Dashboard Financeiro:** Cards de resumo exibem o total de entradas, saídas e o resultado líquido, oferecendo uma visão rápida da saúde financeira do negócio.
-- **Extrato Detalhado:** Uma tabela registra todas as transações, incluindo data, cliente, método de pagamento e valor.
-- **Categorização:** As transações são claramente marcadas como "Entrada" ou "Saída" para fácil identificação.
-- **Busca e Filtros:** Ferramentas para buscar ordens específicas ou filtrar o extrato por período.
+#### Portal da Equipe (Dashboard)
 
-## Inovações e Funcionalidades Adicionais
+**1. Agenda**
+-   **Visualização Centralizada:** Uma grade exibe os agendamentos do dia, organizados em colunas por barbeiro.
+-   **Linha do Tempo Visual:** Horários são exibidos verticalmente, e os agendamentos ocupam um espaço proporcional à sua duração, facilitando a identificação de horários livres.
+-   **Agendamento Inteligente:** O modal de agendamento é um assistente passo a passo que calcula e exibe apenas os horários disponíveis, prevenindo agendamentos duplos.
+-   **Ações Rápidas:** Permite clicar em um agendamento para ver detalhes ou cancelá-lo (requer permissão).
 
-Além do solicitado, foram implementados alguns conceitos para melhorar a usabilidade e a experiência geral:
+**2. Clientes**
+-   **CRM Simplificado:** Uma lista central de todos os clientes com busca rápida por nome ou e-mail.
+-   **Gestão de Clientes:** Funcionalidades de criar, editar e excluir clientes (sujeito a permissões). O formulário inclui validações e máscaras para campos como telefone e data de nascimento.
 
-- **Componentização e Reutilização:** A interface foi construída com componentes reutilizáveis (botões, inputs, tabelas), o que garante consistência visual e facilita a manutenção.
-- **Simulação de Autenticação e Permissões:** Foi implementado um sistema simples de "troca de usuário" no cabeçalho. Isso permite simular o login como "Admin" ou "Barbeiro", demonstrando como o controle de acesso funciona na prática (por exemplo, ocultando a tela de "Fluxo de Caixa" para o perfil de barbeiro).
-- **Design Responsivo (Conceito):** A estrutura com Tailwind CSS está preparada para a fácil implementação de um design totalmente responsivo, adaptando-se a tablets e outros dispositivos.
-- **Ícones SVG Integrados:** Para garantir performance e um visual nítido, todos os ícones são componentes SVG integrados diretamente no código, eliminando a necessidade de carregar fontes de ícones externas.
+**3. Serviços**
+-   **Catálogo Digital:** Gerenciamento dos serviços oferecidos, incluindo nome, preço e duração. A duração é usada pela Agenda para calcular a disponibilidade de horários.
+-   **CRUD de Serviços:** Administradores podem adicionar, editar ou remover serviços do catálogo.
 
-## Como Funciona (Estrutura Técnica)
+**4. Equipe**
+-   **Gestão de Profissionais:** Permite ao administrador cadastrar os barbeiros e outros membros da equipe que usarão o sistema.
 
-- **Front-end:** A aplicação foi construída com **React 18+** e **TypeScript**, garantindo um código moderno, tipado e escalável.
-- **Estilização:** **Tailwind CSS** foi utilizado para criar toda a interface de forma utilitária, resultando em um design customizado e de alta fidelidade em relação ao protótipo.
-- **Gerenciamento de Estado:** O estado da aplicação (como a página ativa e o usuário logado) é gerenciado através de React Hooks (`useState`, `useContext`), evitando a complexidade de bibliotecas externas para este escopo de projeto.
-- **Navegação:** A navegação entre as páginas é controlada internamente por estado, sem a necessidade de uma biblioteca de roteamento, o que torna a aplicação extremamente rápida e contida em um único ambiente.
-- **Dados:** Atualmente, a aplicação utiliza dados mocados (mock data) para simular o funcionamento. Isso permite demonstrar todas as funcionalidades da interface sem a necessidade de um back-end.
+**5. Fluxo de Caixa (Acesso Restrito)**
+-   **Dashboard Financeiro:** Cards de resumo exibem Receita Total, Despesa Total e Saldo, oferecendo uma visão instantânea da saúde financeira.
+-   **Geração Automática de Transações:** Quando um agendamento é concluído, uma transação de "Entrada" pendente é criada automaticamente no caixa.
+-   **Confirmação de Pagamento:** O administrador pode confirmar o pagamento de transações pendentes, especificando o método (Pix, Cartão, etc.).
+-   **Lançamentos Manuais:** Permite adicionar transações avulsas, como despesas (aluguel, produtos) ou outras receitas.
+-   **Tabela com Filtro e Ordenação:** A lista de transações possui busca unificada, ordenação por qualquer coluna e paginação para lidar com grandes volumes de dados.
 
-Este projeto representa um front-end completo e funcional, pronto para ser integrado a uma API back-end para se tornar um produto comercializável.
+**6. Permissões (Acesso Exclusivo do Admin)**
+-   **Controle de Acesso Granular:** O administrador pode selecionar qualquer membro da equipe e definir permissões específicas para cada ação no sistema.
+-   **Perfis Flexíveis:** Permite criar perfis personalizados (ex: "Recepcionista") que podem gerenciar a agenda e clientes, mas não têm acesso a dados financeiros sensíveis.
+-   **Segurança Aplicada:** A interface se adapta em tempo real às permissões do usuário logado. Botões e menus para ações não autorizadas são ocultados, não apenas desabilitados.
+
+#### Portal do Cliente
+
+-   **Autenticação Separada:** Clientes possuem sua própria área de login e cadastro.
+-   **Visualização de Serviços:** Clientes podem ver o catálogo de serviços com preços e durações.
+-   **Agendamento Self-Service:** O cliente pode escolher um serviço, um profissional e ver os horários disponíveis para agendar seu próprio atendimento.
+-   **Meus Agendamentos:** Uma área onde o cliente pode visualizar seus agendamentos futuros e passados, com a opção de cancelar compromissos futuros.
+
+### 2.3. Registro de Atualizações (Changelog)
+
+-   **v2.0 (Atual): Arquitetura Full-Stack Simulada**
+    -   Implementada uma camada de API simulada (`api.ts`) para desacoplar o frontend dos dados mocados.
+    -   Refatoradas todas as páginas para consumir dados da camada de API, com estados de carregamento.
+    -   Implementado fluxo de autenticação completo com armazenamento de token simulado.
+    -   Adicionado `README.md` com documentação técnica e funcional detalhada.
+-   **v1.0: Protótipo Funcional com Dados Locais**
+    -   Desenvolvimento inicial de todas as telas com dados mocados.
+    -   Criação do sistema de permissões e do portal do cliente.
+    -   Implementação de filtros, ordenação e paginação na tela de Fluxo de Caixa.
+    -   Estruturação inicial do projeto com React, TypeScript e Tailwind CSS.

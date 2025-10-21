@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import type { User, Client } from '../types';
-import { USERS, CLIENTS } from '../constants';
+import { api } from '../api';
 import { Role } from '../types';
 import { CalendarIcon, SparkleIcon } from '../components/icons';
 
 interface AuthPageProps {
-  onLogin: (user: User | Client) => void;
+  onLogin: (user: User | Client, token: string) => void;
 }
 
 const BarberFlowLogoIcon: React.FC<{className?: string}> = ({className}) => (
@@ -23,43 +23,45 @@ const FormWrapper: React.FC<{ children: React.ReactNode; }> = ({ children }) => 
 );
 
 // --- LOGIN FORM COMPONENT ---
-const LoginForm: React.FC<{ onLogin: (user: User | Client) => void; onSwitchToRegister: () => void; }> = ({ onLogin, onSwitchToRegister }) => {
+const LoginForm: React.FC<{ onLogin: AuthPageProps['onLogin']; onSwitchToRegister: () => void; }> = ({ onLogin, onSwitchToRegister }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
-        const allUsers = [...USERS, ...CLIENTS];
-        const foundUser = allUsers.find(
-            (user) => user.email === email && user.password === password
-        );
-
-        if (foundUser) {
-            onLogin(foundUser);
-        } else {
-            setError('E-mail ou senha inválidos.');
+        try {
+            const { user, token } = await api.login(email, password);
+            onLogin(user, token);
+        } catch (err: any) {
+            setError(err.message || 'E-mail ou senha inválidos.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const inputClasses = "mt-1 block w-full bg-gray-800 text-white border-transparent rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+    const inputClasses = "mt-1 block w-full bg-gray-100 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900";
     const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
-    const buttonClasses = "w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
+    const buttonClasses = "w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400";
 
     return (
         <form onSubmit={handleLogin} className="space-y-6">
             {error && <p className="bg-red-100 text-red-700 p-3 rounded-md text-sm text-center">{error}</p>}
             <div>
                 <label className={labelClasses}>E-mail</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClasses} placeholder="a"/>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClasses} placeholder="admin@barberflow.com"/>
             </div>
             <div>
                 <label className={labelClasses}>Senha</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputClasses}/>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputClasses} placeholder="admin"/>
             </div>
-            <button type="submit" className={buttonClasses}>Entrar</button>
+            <button type="submit" disabled={isLoading} className={buttonClasses}>
+                {isLoading ? 'Entrando...' : 'Entrar'}
+            </button>
             <p className="text-sm text-center text-gray-600 pt-4">
                 Não tem uma conta?{' '}
                 <button type="button" onClick={onSwitchToRegister} className="font-semibold text-blue-600 hover:underline">
@@ -71,20 +73,22 @@ const LoginForm: React.FC<{ onLogin: (user: User | Client) => void; onSwitchToRe
 };
 
 // --- REGISTRATION FORM COMPONENT ---
-const RegistrationForm: React.FC<{ onLogin: (user: User | Client) => void; onSwitchToLogin: () => void; }> = ({ onLogin, onSwitchToLogin }) => {
+const RegistrationForm: React.FC<{ onLogin: AuthPageProps['onLogin']; onSwitchToLogin: () => void; }> = ({ onLogin, onSwitchToLogin }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
     const [birthDate, setBirthDate] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    const handleRegister = (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        const newClient: Client = {
-            id: Date.now(),
+        setIsLoading(true);
+
+        const newClient: Omit<Client, 'id'> = {
             name,
             email,
             password,
@@ -93,7 +97,15 @@ const RegistrationForm: React.FC<{ onLogin: (user: User | Client) => void; onSwi
             birthDate,
             cpf: '',
         };
-        onLogin(newClient);
+        
+        try {
+            const { user, token } = await api.registerClient(newClient);
+            onLogin(user, token);
+        } catch (err: any) {
+            setError(err.message || 'Ocorreu um erro no cadastro.');
+        } finally {
+            setIsLoading(false);
+        }
     }
     
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +132,7 @@ const RegistrationForm: React.FC<{ onLogin: (user: User | Client) => void; onSwi
     
     const inputClasses = "w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
     const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
-    const buttonClasses = "w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
+    const buttonClasses = "w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400";
 
     return (
         <form onSubmit={handleRegister} className="space-y-4">
@@ -151,7 +163,9 @@ const RegistrationForm: React.FC<{ onLogin: (user: User | Client) => void; onSwi
                 </button>
             </div>
             <div className="pt-2">
-                <button type="submit" className={buttonClasses}>Cadastrar</button>
+                <button type="submit" disabled={isLoading} className={buttonClasses}>
+                    {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+                </button>
             </div>
             <p className="text-sm text-center text-gray-600 pt-2">
                 Já tem uma conta?{' '}

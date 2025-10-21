@@ -6,7 +6,7 @@ type IconProps = {
 
 export const MustacheIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <path fill="currentColor" d="M152.5,95.5c-4.2-2.3-33.8-21.3-33.8-21.3c-2.6-1.7-5.9-1.7-8.5,0c-1.3,0.8-30.8,19-33.8,21.3c-13,7.1-23.4,14.2-23.4,24.3c0,10.1,10.4,14.2,23.4,14.2c13,0,16.1-4,20.3-6.2c4.2-2.3,20.3-12.7,20.3-12.7c2.6-1.7,5.9-1.7,8.5,0c0,0,16.1,10.4,20.3,12.7c4.2,2.3,7.3,6.2,20.3,6.2c13,0,23.4-4,23.4-14.2C175.9,109.7,165.5,102.6,152.5,95.5z"/>
+        <path fill="currentColor" d="M152.5,95.5c-4.2-2.3-33.8-21.3-33.8-21.3c-2.6-1.7-5.9-1.7,8.5,0c-1.3,0.8-30.8,19-33.8,21.3c-13,7.1-23.4,14.2-23.4,24.3c0,10.1,10.4,14.2,23.4,14.2c13,0,16.1-4,20.3-6.2c4.2-2.3,20.3-12.7,20.3-12.7c2.6-1.7,5.9-1.7,8.5,0c0,0,16.1,10.4,20.3,12.7c4.2,2.3,7.3,6.2,20.3,6.2c13,0,23.4-4,23.4-14.2C175.9,109.7,165.5,102.6,152.5,95.5z"/>
     </svg>
 );
 
@@ -117,5 +117,32 @@ export const SparkleIcon: React.FC<IconProps> = ({ className }) => (
         <line x1="18" y1="12" x2="22" y2="12"></line>
         <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
         <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+);
+
+export const CheckCircleIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+);
+
+export const ArrowUpIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="12" y1="19" x2="12" y2="5"></line>
+        <polyline points="5 12 12 5 19 12"></polyline>
+    </svg>
+);
+
+export const ArrowDownIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <polyline points="19 12 12 19 5 12"></polyline>
+    </svg>
+);
+
+export const ShieldCheckIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>
     </svg>
 );

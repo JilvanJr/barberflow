@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Serviço do Frontend (a nossa aplicação React)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    container_name: barberflow-frontend
+
+  # Serviço do Backend (nossa futura API em Java/Spring Boot)
+  backend-spring:
+    # A imagem será construída a partir de um Dockerfile dentro da pasta 'backend' que criaremos.
+    # Por enquanto, é apenas um placeholder.
+    image: openjdk:17-jdk-slim
+    container_name: barberflow-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-postgres:5432/barberflow
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  # Serviço do Banco de Dados
+  db-postgres:
+    image: postgres:14-alpine
+    container_name: barberflow-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=barberflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

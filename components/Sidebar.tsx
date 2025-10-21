@@ -1,8 +1,9 @@
+
 import React, { useContext } from 'react';
 import { AppContext } from '../App';
 import type { Page } from '../App';
 import { Role } from '../types';
-import { MustacheIcon, BuildingIcon, HomeIcon, CalendarIcon, UsersIcon, ScissorsIcon, DollarSignIcon } from './icons';
+import { MustacheIcon, BuildingIcon, HomeIcon, CalendarIcon, UsersIcon, ScissorsIcon, DollarSignIcon, ShieldCheckIcon } from './icons';
 
 const Sidebar: React.FC = () => {
     const context = useContext(AppContext);
@@ -10,15 +11,31 @@ const Sidebar: React.FC = () => {
 
     const { activePage, setActivePage, currentUser } = context;
 
+    // FIX: Add a type guard to ensure currentUser is a User, not a Client, before accessing properties like `permissions`.
+    if (!currentUser || currentUser.role === Role.CLIENT) {
+        return null;
+    }
+
     // FIX: Type error on 'Home' is resolved by updating Page type in App.tsx
-    const navItems: { name: Page; icon: React.FC<{ className?: string }>; roles: Role[] }[] = [
-        { name: 'Home', icon: HomeIcon, roles: [Role.ADMIN, Role.BARBER] },
-        { name: 'Agenda', icon: CalendarIcon, roles: [Role.ADMIN, Role.BARBER] },
-        { name: 'Clientes', icon: UsersIcon, roles: [Role.ADMIN, Role.BARBER] },
-        { name: 'Serviços', icon: ScissorsIcon, roles: [Role.ADMIN, Role.BARBER] },
-        { name: 'Equipe', icon: UsersIcon, roles: [Role.ADMIN] },
-        { name: 'Fluxo de Caixa', icon: DollarSignIcon, roles: [Role.ADMIN] },
+    const navItems: { name: Page; icon: React.FC<{ className?: string }>; permissionKey: keyof typeof currentUser.permissions | null }[] = [
+        { name: 'Home', icon: HomeIcon, permissionKey: 'canViewAgenda' },
+        { name: 'Agenda', icon: CalendarIcon, permissionKey: 'canViewAgenda' },
+        { name: 'Clientes', icon: UsersIcon, permissionKey: 'canViewClients' },
+        { name: 'Serviços', icon: ScissorsIcon, permissionKey: 'canViewServices' },
+        { name: 'Equipe', icon: UsersIcon, permissionKey: 'canViewTeam' },
+        { name: 'Fluxo de Caixa', icon: DollarSignIcon, permissionKey: 'canViewCashFlow' },
+        { name: 'Permissões', icon: ShieldCheckIcon, permissionKey: null }, // Admin only
     ];
+
+    const isVisible = (item: typeof navItems[0]) => {
+        if (item.name === 'Permissões') {
+            return currentUser.role === Role.ADMIN;
+        }
+        if (item.permissionKey) {
+            return currentUser.permissions[item.permissionKey];
+        }
+        return false;
+    };
 
     const NavLink: React.FC<{ item: typeof navItems[0] }> = ({ item }) => {
         const isActive = activePage === item.name;
@@ -56,14 +73,14 @@ const Sidebar: React.FC = () => {
 
             <nav className="flex flex-col space-y-4">
                 {/* FIX: Render 'Home' link, which was previously defined but not rendered. */}
-                {navItems.filter(item => item.name === 'Home' && item.roles.includes(currentUser.role)).map(item => (
+                {navItems.filter(item => item.name === 'Home' && isVisible(item)).map(item => (
                     <NavLink key={item.name} item={item} />
                 ))}
                 <div>
                     <h3 className="text-xs font-semibold text-gray-400 uppercase px-4 mb-2">Gestão</h3>
                     <div className="space-y-1">
                         {/* FIX: Comparison error is resolved by updating Page type in App.tsx. Filter is updated to exclude 'Home' from this section. */}
-                        {navItems.filter(item => item.name !== 'Home' && item.roles.includes(currentUser.role)).map(item => (
+                        {navItems.filter(item => item.name !== 'Home' && isVisible(item)).map(item => (
                             <NavLink key={item.name} item={item} />
                         ))}
                     </div>

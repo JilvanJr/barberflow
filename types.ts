@@ -4,6 +4,35 @@ export enum Role {
   CLIENT = 'client',
 }
 
+export interface Permissions {
+  // Agenda
+  canViewAgenda: boolean;
+  canCreateAppointment: boolean;
+  canCancelAppointment: boolean;
+  // Clientes
+  canViewClients: boolean;
+  canCreateClient: boolean;
+  canEditClient: boolean;
+  canDeleteClient: boolean;
+  // Serviços
+  canViewServices: boolean;
+  canCreateService: boolean;
+  canEditService: boolean;
+  canDeleteService: boolean;
+  // Equipe
+  canViewTeam: boolean;
+  canCreateTeamMember: boolean;
+  canEditTeamMember: boolean;
+  canDeleteTeamMember: boolean;
+  // Fluxo de Caixa
+  canViewCashFlow: boolean;
+  canViewCashFlowDashboard: boolean;
+  canConfirmPayment: boolean;
+  canAddTransaction: boolean;
+  canDeleteTransaction: boolean;
+}
+
+
 export interface User {
   id: number;
   name: string;
@@ -11,6 +40,7 @@ export interface User {
   avatarUrl: string;
   role: Role.ADMIN | Role.BARBER;
   password?: string;
+  permissions: Permissions;
 }
 
 export interface Client {
@@ -60,4 +90,6 @@ export interface Transaction {
     method: string;
     type: TransactionType;
     value: number;
+    appointmentId?: number;
+    paymentStatus: 'pending' | 'completed';
 }

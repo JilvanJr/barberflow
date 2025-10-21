@@ -1,6 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { BARBERS } from '../constants';
-import { Barber } from '../types';
+
+import React, { useState, useCallback, useEffect, useContext } from 'react';
+import { AppContext } from '../App';
+import { api } from '../api';
+import { Barber, User } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, XIcon } from '../components/icons';
 
 const BarberModal: React.FC<{
@@ -54,9 +56,31 @@ const BarberModal: React.FC<{
 
 
 const TeamPage: React.FC = () => {
-    const [barbers, setBarbers] = useState<Barber[]>(BARBERS);
+    const context = useContext(AppContext);
+    const [barbers, setBarbers] = useState<Barber[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBarber, setEditingBarber] = useState<Partial<Barber> | null>(null);
+
+    // FIX: Cast currentUser to User to safely access permissions.
+    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+
+    const fetchBarbers = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await api.getBarbers();
+            setBarbers(data);
+        } catch (error) {
+            console.error("Failed to fetch barbers", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBarbers();
+    }, [fetchBarbers]);
+
 
     const handleAddNew = () => {
         setEditingBarber({name: '', email: '', avatarUrl: ''});
@@ -68,30 +92,37 @@ const TeamPage: React.FC = () => {
         setIsModalOpen(true);
     };
     
-    const handleDelete = (barberId: number) => {
+    const handleDelete = async (barberId: number) => {
         if(window.confirm('Tem certeza que deseja excluir este membro da equipe?')) {
-            setBarbers(barbers.filter(b => b.id !== barberId));
+            await api.deleteBarber(barberId);
+            fetchBarbers();
         }
     };
 
-    const handleSave = useCallback((barberToSave: Barber) => {
+    const handleSave = useCallback(async (barberToSave: Barber) => {
         if (barberToSave.id) {
-            setBarbers(barbers.map(b => b.id === barberToSave.id ? barberToSave : b));
+            await api.updateBarber(barberToSave.id, barberToSave);
         } else {
-            setBarbers([...barbers, { ...barberToSave, id: Date.now() }]);
+            await api.createBarber(barberToSave);
         }
         setIsModalOpen(false);
-    }, [barbers]);
+        fetchBarbers();
+    }, [fetchBarbers]);
 
+    if (isLoading) {
+        return <div className="text-center p-8">Carregando equipe...</div>;
+    }
 
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Equipe</h2>
-                <button onClick={handleAddNew} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-                    <PlusIcon className="w-5 h-5" />
-                    <span>Novo Membro</span>
-                </button>
+                {currentUserPermissions?.canCreateTeamMember && (
+                    <button onClick={handleAddNew} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                        <PlusIcon className="w-5 h-5" />
+                        <span>Novo Membro</span>
+                    </button>
+                )}
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -100,14 +131,18 @@ const TeamPage: React.FC = () => {
                         <img src={barber.avatarUrl} alt={barber.name} className="w-24 h-24 rounded-full mb-4" />
                         <h3 className="text-lg font-semibold text-gray-800">{barber.name}</h3>
                         <p className="text-sm text-gray-500">{barber.email}</p>
-                        <div className="mt-4 flex space-x-2">
-                            <button onClick={() => handleEdit(barber)} className="text-blue-600 hover:text-blue-900 p-2 bg-gray-100 rounded-full"><EditIcon className="w-5 h-5"/></button>
-                            <button onClick={() => handleDelete(barber.id)} className="text-red-600 hover:text-red-900 p-2 bg-gray-100 rounded-full"><TrashIcon className="w-5 h-5"/></button>
-                        </div>
+                        {(currentUserPermissions?.canEditTeamMember || currentUserPermissions?.canDeleteTeamMember) && (
+                            <div className="mt-4 flex space-x-2">
+                                {currentUserPermissions.canEditTeamMember && <button onClick={() => handleEdit(barber)} className="text-blue-600 hover:text-blue-900 p-2 bg-gray-100 rounded-full"><EditIcon className="w-5 h-5"/></button>}
+                                {currentUserPermissions.canDeleteTeamMember && <button onClick={() => handleDelete(barber.id)} className="text-red-600 hover:text-red-900 p-2 bg-gray-100 rounded-full"><TrashIcon className="w-5 h-5"/></button>}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
+            {(currentUserPermissions?.canCreateTeamMember || currentUserPermissions?.canEditTeamMember) && (
              <BarberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} barber={editingBarber} />
+            )}
         </div>
     );
 };

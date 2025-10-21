@@ -1,6 +1,8 @@
+
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../App';
 import { SettingsIcon, ChevronDownIcon, LogoutIcon } from './icons';
+import { Role } from '../types';
 
 const Header: React.FC = () => {
     const context = useContext(AppContext);
@@ -9,6 +11,11 @@ const Header: React.FC = () => {
     if (!context) return null;
 
     const { activePage, currentUser, logout } = context;
+
+    // FIX: Add a type guard to ensure currentUser is a User, not a Client, before accessing properties like `avatarUrl`.
+    if (!currentUser || currentUser.role === Role.CLIENT) {
+        return null;
+    }
 
     return (
         <header className="bg-white border-b border-gray-200 p-6 flex justify-between items-center">

@@ -1,6 +1,8 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { APPOINTMENTS, BARBERS, CLIENTS, SERVICES } from '../constants';
-import { Appointment, Barber, Client, Service } from '../types';
+
+import React, { useState, useCallback, useMemo, useEffect, useRef, useContext } from 'react';
+import { AppContext } from '../App';
+import { api } from '../api';
+import { Appointment, Barber, Client, Service, User } from '../types';
 import { PlusIcon, XIcon, CalendarIcon, SearchIcon, ChevronDownIcon } from '../components/icons';
 
 // Helper to get today's date in YYYY-MM-DD format based on local timezone
@@ -109,7 +111,7 @@ const CalendarPopup: React.FC<{
 const AppointmentModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (app: Omit<Appointment, 'id' | 'endTime'>) => void;
+    onSave: (app: Omit<Appointment, 'id' | 'endTime'>) => Promise<void>;
     clients: Client[];
     services: Service[];
     barbers: Barber[];
@@ -131,6 +133,7 @@ const AppointmentModal: React.FC<{
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const resetModalState = useCallback(() => {
         const isPreFilled = initialData?.barberId && initialData?.startTime;
@@ -145,6 +148,7 @@ const AppointmentModal: React.FC<{
         setClientSearch('');
         setAvailableTimes([]);
         setIsClientDropdownOpen(false);
+        setIsSaving(false);
     }, [initialData]);
 
     useEffect(() => {
@@ -214,15 +218,17 @@ const AppointmentModal: React.FC<{
     
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({
+        setIsSaving(true);
+        await onSave({
             clientId: Number(appointmentData.clientId),
             serviceId: Number(appointmentData.serviceId),
             barberId: Number(appointmentData.barberId),
             date: appointmentData.date,
             startTime: appointmentData.startTime,
         });
+        setIsSaving(false);
         onClose();
     };
 
@@ -340,8 +346,8 @@ const AppointmentModal: React.FC<{
                          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300">
                             Cancelar
                         </button>
-                        <button type="submit" disabled={!appointmentData.clientId} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                            Salvar Agendamento
+                        <button type="submit" disabled={!appointmentData.clientId || isSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            {isSaving ? 'Salvando...' : 'Salvar Agendamento'}
                         </button>
                     </div>
                 </form>
@@ -355,21 +361,25 @@ const CancelAppointmentModal: React.FC<{
     onClose: () => void;
     onConfirm: (appointmentId: number) => void;
     appointment: Appointment | null;
-}> = ({ isOpen, onClose, onConfirm, appointment }) => {
+    canCancel: boolean;
+    clients: Client[];
+    services: Service[];
+    barbers: Barber[];
+}> = ({ isOpen, onClose, onConfirm, appointment, canCancel, clients, services, barbers }) => {
     if (!isOpen || !appointment) return null;
 
-    const client = CLIENTS.find(c => c.id === appointment.clientId);
-    const service = SERVICES.find(s => s.id === appointment.serviceId);
-    const barber = BARBERS.find(b => b.id === appointment.barberId);
+    const client = clients.find(c => c.id === appointment.clientId);
+    const service = services.find(s => s.id === appointment.serviceId);
+    const barber = barbers.find(b => b.id === appointment.barberId);
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Cancelar Agendamento</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">Detalhes do Agendamento</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <p className="text-gray-600 mb-6">Tem certeza que deseja cancelar este agendamento?</p>
+                {!canCancel && <p className="text-sm bg-yellow-100 text-yellow-800 p-3 rounded-md mb-4">Você não tem permissão para cancelar agendamentos.</p>}
                 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200 mb-6 text-sm text-gray-800">
                     <p><strong>Cliente:</strong> {client?.name}</p>
@@ -384,13 +394,14 @@ const CancelAppointmentModal: React.FC<{
                         onClick={onClose} 
                         className="w-full px-5 py-3 text-sm font-semibold text-center text-gray-800 bg-white rounded-lg border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200"
                     >
-                        Manter<br />Agendamento
+                        Fechar
                     </button>
                     <button 
                         onClick={() => onConfirm(appointment.id)}
-                        className="w-full px-5 py-3 text-sm font-semibold text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300"
+                        disabled={!canCancel}
+                        className="w-full px-5 py-3 text-sm font-semibold text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                        Confirmar<br />Cancelamento
+                        Cancelar Agendamento
                     </button>
                 </div>
             </div>
@@ -399,13 +410,46 @@ const CancelAppointmentModal: React.FC<{
 };
 
 const AgendaPage: React.FC = () => {
+    const context = useContext(AppContext);
     const [selectedDate, setSelectedDate] = useState('2025-10-01');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [appointments, setAppointments] = useState(APPOINTMENTS);
+    
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [barbers, setBarbers] = useState<Barber[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [initialModalData, setInitialModalData] = useState<Partial<Appointment> | undefined>();
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
+    // FIX: Cast currentUser to User to safely access permissions.
+    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [appointmentsData, barbersData, clientsData, servicesData] = await Promise.all([
+                    api.getAppointments(),
+                    api.getBarbers(),
+                    api.getClients(),
+                    api.getServices()
+                ]);
+                setAppointments(appointmentsData);
+                setBarbers(barbersData);
+                setClients(clientsData);
+                setServices(servicesData);
+            } catch (error) {
+                console.error("Failed to fetch agenda data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const timeSlots = useMemo(() => Array.from({ length: 22 }, (_, i) => { // 9:00 to 19:30
         const hour = 9 + Math.floor(i / 2);
@@ -416,23 +460,13 @@ const AgendaPage: React.FC = () => {
     const timeSlotHeight = 80; // in pixels for a 30-min slot
     const pixelsPerMinute = timeSlotHeight / 30;
 
-    const handleSaveAppointment = useCallback((newApp: Omit<Appointment, 'id' | 'endTime'>) => {
-        const service = SERVICES.find(s => s.id === newApp.serviceId);
-        if (!service) return;
-
-        const startTime = new Date(`${newApp.date}T${newApp.startTime}`);
-        const endTime = new Date(startTime.getTime() + service.duration * 60000);
-        const endTimeString = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
-
-        const appointmentToAdd: Appointment = {
-            ...newApp,
-            id: Date.now(),
-            endTime: endTimeString,
-        };
-        setAppointments(prev => [...prev, appointmentToAdd].sort((a,b) => a.startTime.localeCompare(b.startTime)));
+    const handleSaveAppointment = useCallback(async (newApp: Omit<Appointment, 'id' | 'endTime'>) => {
+        const savedAppointment = await api.createAppointment(newApp);
+        setAppointments(prev => [...prev, savedAppointment].sort((a,b) => a.startTime.localeCompare(b.startTime)));
     }, []);
 
-    const handleCancelAppointment = (appointmentId: number) => {
+    const handleCancelAppointment = async (appointmentId: number) => {
+        await api.deleteAppointment(appointmentId);
         setAppointments(prev => prev.filter(app => app.id !== appointmentId));
         setIsCancelModalOpen(false);
         setSelectedAppointment(null);
@@ -458,6 +492,7 @@ const AgendaPage: React.FC = () => {
     }
 
     const handleSlotClick = (barberId: number, e: React.MouseEvent<HTMLDivElement>) => {
+        if (!currentUserPermissions?.canCreateAppointment) return;
         // Prevent opening new appointment modal if clicking on an existing one
         if ((e.target as HTMLElement).closest('.appointment-card')) {
             return;
@@ -490,6 +525,10 @@ const AgendaPage: React.FC = () => {
         const date = new Date(dateString + 'T00:00:00');
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').replace(/ de /g, ' ');
     }
+    
+    if (isLoading) {
+        return <div className="text-center p-8">Carregando agenda...</div>;
+    }
 
     return (
         <>
@@ -520,17 +559,19 @@ const AgendaPage: React.FC = () => {
                         <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     </div>
                 </div>
-                <button onClick={handleOpenModal} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-                    <PlusIcon className="w-5 h-5" />
-                    <span>Novo Agendamento</span>
-                </button>
+                {currentUserPermissions?.canCreateAppointment && (
+                    <button onClick={handleOpenModal} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                        <PlusIcon className="w-5 h-5" />
+                        <span>Novo Agendamento</span>
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-lg shadow-md">
                 <div className="flex border-b border-gray-200">
                     <div className="w-24 flex-shrink-0"></div> {/* Time column spacer */}
-                    <div className="flex-1 grid" style={{gridTemplateColumns: `repeat(${BARBERS.length}, 1fr)`}}>
-                         {BARBERS.map(barber => (
+                    <div className="flex-1 grid" style={{gridTemplateColumns: `repeat(${barbers.length}, 1fr)`}}>
+                         {barbers.map(barber => (
                             <div key={barber.id} className="p-4 text-center">
                                 <img src={barber.avatarUrl} alt={barber.name} className="w-12 h-12 rounded-full mx-auto mb-2"/>
                                 <p className="font-semibold text-gray-700">{barber.name}</p>
@@ -547,7 +588,7 @@ const AgendaPage: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="flex-1 grid relative" style={{gridTemplateColumns: `repeat(${BARBERS.length}, 1fr)`}}>
+                        <div className="flex-1 grid relative" style={{gridTemplateColumns: `repeat(${barbers.length}, 1fr)`}}>
                             {/* Background Lines */}
                             <div className="absolute inset-0">
                                 {timeSlots.map((_, index) => (
@@ -556,15 +597,15 @@ const AgendaPage: React.FC = () => {
                             </div>
                             
                             {/* Barber columns with appointments */}
-                            {BARBERS.map((barber, index) => (
+                            {barbers.map((barber, index) => (
                                 <div 
                                     key={barber.id}
                                     className={`relative ${index > 0 ? 'border-l border-gray-100' : ''}`}
                                     onClick={(e) => handleSlotClick(barber.id, e)}
                                 >
                                     {todaysAppointments.filter(a => a.barberId === barber.id).map(app => {
-                                        const client = CLIENTS.find(c => c.id === app.clientId);
-                                        const service = SERVICES.find(s => s.id === app.serviceId);
+                                        const client = clients.find(c => c.id === app.clientId);
+                                        const service = services.find(s => s.id === app.serviceId);
                                         const top = timeToPosition(app.startTime);
                                         const height = getAppointmentDuration(app.startTime, app.endTime) * pixelsPerMinute;
                                         return (
@@ -590,21 +631,27 @@ const AgendaPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <AppointmentModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSaveAppointment}
-                clients={CLIENTS}
-                services={SERVICES}
-                barbers={BARBERS}
-                appointments={appointments}
-                initialData={initialModalData}
-            />
+            {currentUserPermissions?.canCreateAppointment && (
+                <AppointmentModal 
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={handleSaveAppointment}
+                    clients={clients}
+                    services={services}
+                    barbers={barbers}
+                    appointments={appointments}
+                    initialData={initialModalData}
+                />
+            )}
              <CancelAppointmentModal
                 isOpen={isCancelModalOpen}
                 onClose={() => setIsCancelModalOpen(false)}
                 onConfirm={handleCancelAppointment}
                 appointment={selectedAppointment}
+                canCancel={!!currentUserPermissions?.canCancelAppointment}
+                clients={clients}
+                services={services}
+                barbers={barbers}
             />
         </>
     );

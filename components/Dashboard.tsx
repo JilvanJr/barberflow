@@ -7,6 +7,7 @@ import ClientsPage from '../pages/ClientsPage';
 import ServicesPage from '../pages/ServicesPage';
 import CashFlowPage from '../pages/CashFlowPage';
 import TeamPage from '../pages/TeamPage';
+import PermissionsPage from '../pages/PermissionsPage';
 
 const Dashboard: React.FC = () => {
     const context = useContext(AppContext);
@@ -25,6 +26,8 @@ const Dashboard: React.FC = () => {
                 return <TeamPage />;
             case 'Fluxo de Caixa':
                 return <CashFlowPage />;
+            case 'Permissões':
+                return <PermissionsPage />;
             default:
                 return <AgendaPage />;
         }

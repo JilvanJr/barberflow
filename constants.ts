@@ -1,8 +1,55 @@
-import { Role, User, Client, Service, Barber, Appointment, Transaction, TransactionType } from './types';
+import { Role, User, Client, Service, Barber, Appointment, Transaction, TransactionType, Permissions } from './types';
+
+export const fullAdminPermissions: Permissions = {
+  canViewAgenda: true,
+  canCreateAppointment: true,
+  canCancelAppointment: true,
+  canViewClients: true,
+  canCreateClient: true,
+  canEditClient: true,
+  canDeleteClient: true,
+  canViewServices: true,
+  canCreateService: true,
+  canEditService: true,
+  canDeleteService: true,
+  canViewTeam: true,
+  canCreateTeamMember: true,
+  canEditTeamMember: true,
+  canDeleteTeamMember: true,
+  canViewCashFlow: true,
+  canViewCashFlowDashboard: true,
+  canConfirmPayment: true,
+  canAddTransaction: true,
+  canDeleteTransaction: true,
+};
+
+export const defaultBarberPermissions: Permissions = {
+  canViewAgenda: true,
+  canCreateAppointment: true,
+  canCancelAppointment: true,
+  canViewClients: true,
+  canCreateClient: true,
+  canEditClient: false,
+  canDeleteClient: false,
+  canViewServices: true,
+  canCreateService: false,
+  canEditService: false,
+  canDeleteService: false,
+  canViewTeam: false,
+  canCreateTeamMember: false,
+  canEditTeamMember: false,
+  canDeleteTeamMember: false,
+  canViewCashFlow: false,
+  canViewCashFlowDashboard: false,
+  canConfirmPayment: false,
+  canAddTransaction: false,
+  canDeleteTransaction: false,
+};
+
 
 export const USERS: User[] = [
-  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', role: Role.ADMIN, password: 'admin' },
-  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', role: Role.BARBER, password: 'barber' },
+  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', role: Role.ADMIN, password: 'admin', permissions: fullAdminPermissions },
+  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', role: Role.BARBER, password: 'barber', permissions: defaultBarberPermissions },
 ];
 
 export const BARBERS: Barber[] = [
@@ -43,13 +90,13 @@ export const APPOINTMENTS: Appointment[] = [
 ];
 
 export const TRANSACTIONS: Transaction[] = [
-    { id: '#ORD001', date: '07 Out 2025', name: 'Cliente 1', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD002', date: '07 Out 2025', name: 'Cliente 2', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD003', date: '07 Out 2025', name: 'Natan Borges Ltda.', method: 'Retirada', type: TransactionType.EXPENSE, value: 250.00 },
-    { id: '#ORD004', date: '07 Out 2025', name: 'Cliente 4', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD005', date: '07 Out 2025', name: 'Cliente 5', method: 'Cartão de Débito', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD006', date: '07 Out 2025', name: 'Cliente 6', method: 'Pix', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD007', date: '07 Out 2025', name: 'Cliente 7', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90 },
-    { id: '#ORD008', date: '08 Out 2025', name: 'Cliente 8', method: 'Pix', type: TransactionType.INCOME, value: 35.90 },
-    { id: '#ORD009', date: '08 Out 2025', name: 'Cliente 9', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 99.80 },
+    { id: '#ORD001', date: '2025-10-07', name: 'Cliente 1', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD002', date: '2025-10-07', name: 'Cliente 2', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD003', date: '2025-10-07', name: 'Natan Borges Ltda.', method: 'Retirada', type: TransactionType.EXPENSE, value: 250.00, paymentStatus: 'completed' },
+    { id: '#ORD004', date: '2025-10-07', name: 'Cliente 4', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD005', date: '2025-10-07', name: 'Cliente 5', method: 'Cartão de Débito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD006', date: '2025-10-07', name: 'Cliente 6', method: 'Pix', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD007', date: '2025-10-07', name: 'Cliente 7', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed' },
+    { id: '#ORD008', date: '2025-10-08', name: 'Cliente 8', method: 'Pix', type: TransactionType.INCOME, value: 35.90, paymentStatus: 'completed' },
+    { id: '#ORD009', date: '2025-10-08', name: 'Cliente 9', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 99.80, paymentStatus: 'completed' },
 ];

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Client, Service, Barber, Appointment } from '../types';
-import { BARBERS, SERVICES, APPOINTMENTS as MOCK_APPOINTMENTS } from '../constants';
+import { api } from '../api';
 import { MustacheIcon, LogoutIcon, XIcon } from '../components/icons';
 
 const availableTimes = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"];
@@ -9,7 +9,8 @@ const BookingModal: React.FC<{
     service: Service | null;
     onClose: () => void;
     onConfirm: (bookingDetails: Omit<Appointment, 'id' | 'clientId'>) => void;
-}> = ({ service, onClose, onConfirm }) => {
+    barbers: Barber[];
+}> = ({ service, onClose, onConfirm, barbers }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -57,7 +58,7 @@ const BookingModal: React.FC<{
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Selecione um profissional</label>
                         <div className="flex space-x-4">
-                            {BARBERS.map(barber => (
+                            {barbers.map(barber => (
                                 <div key={barber.id} onClick={() => setSelectedBarber(barber)} className={`text-center cursor-pointer p-2 rounded-lg border-2 ${selectedBarber?.id === barber.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-100'}`}>
                                     <img src={barber.avatarUrl} alt={barber.name} className="w-16 h-16 rounded-full mx-auto" />
                                     <p className="mt-2 text-sm font-semibold">{barber.name}</p>
@@ -89,13 +90,13 @@ const BookingModal: React.FC<{
     );
 };
 
-const MyApointments: React.FC<{ appointments: Appointment[], onCancel: (id: number) => void }> = ({ appointments, onCancel }) => {
+const MyApointments: React.FC<{ appointments: Appointment[], onCancel: (id: number) => void, barbers: Barber[], services: Service[] }> = ({ appointments, onCancel, barbers, services }) => {
     const upcomingAppointments = appointments.filter(a => new Date(a.date) >= new Date());
     const pastAppointments = appointments.filter(a => new Date(a.date) < new Date());
 
     const AppointmentCard: React.FC<{app: Appointment, isUpcoming?: boolean}> = ({ app, isUpcoming = false }) => {
-        const barber = BARBERS.find(b => b.id === app.barberId);
-        const service = SERVICES.find(s => s.id === app.serviceId);
+        const barber = barbers.find(b => b.id === app.barberId);
+        const service = services.find(s => s.id === app.serviceId);
         return (
             <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
                 <p className="font-bold text-lg">{service?.name}</p>
@@ -134,28 +135,50 @@ const ClientPortal: React.FC<{ client: Client; onLogout: () => void; }> = ({ cli
     const [activeTab, setActiveTab] = useState<'services' | 'appointments'>('services');
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
-    const [myAppointments, setMyAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS.filter(a => a.clientId === client.id));
+    const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [barbers, setBarbers] = useState<Barber[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchPortalData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [servicesData, appointmentsData, barbersData] = await Promise.all([
+                api.getServices(),
+                api.getMyAppointments(client.id),
+                api.getBarbers(),
+            ]);
+            setServices(servicesData);
+            setMyAppointments(appointmentsData);
+            setBarbers(barbersData);
+        } catch (error) {
+            console.error("Failed to load client portal data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [client.id]);
+
+    useEffect(() => {
+        fetchPortalData();
+    }, [fetchPortalData]);
 
     const handleStartBooking = (service: Service) => {
         setSelectedService(service);
         setIsBookingModalOpen(true);
     };
 
-    const handleConfirmBooking = (bookingDetails: Omit<Appointment, 'id' | 'clientId'>) => {
-        const newAppointment: Appointment = {
-            ...bookingDetails,
-            id: Date.now(),
-            clientId: client.id,
-        };
-        setMyAppointments(prev => [...prev, newAppointment]);
+    const handleConfirmBooking = async (bookingDetails: Omit<Appointment, 'id' | 'clientId'>) => {
+        await api.createAppointment({ ...bookingDetails, clientId: client.id });
         alert('Agendamento confirmado com sucesso! (Funcionalidade simulada)');
         setIsBookingModalOpen(false);
         setSelectedService(null);
+        fetchPortalData(); // Refresh appointments
     };
 
-    const handleCancelAppointment = (id: number) => {
+    const handleCancelAppointment = async (id: number) => {
         if (window.confirm("Tem certeza que deseja cancelar este agendamento?")) {
-            setMyAppointments(prev => prev.filter(a => a.id !== id));
+            await api.deleteAppointment(id);
+            fetchPortalData(); // Refresh appointments
         }
     }
 
@@ -191,9 +214,11 @@ const ClientPortal: React.FC<{ client: Client; onLogout: () => void; }> = ({ cli
                     <NavButton tabName="appointments" label="Meus Agendamentos" />
                 </div>
 
-                {activeTab === 'services' && (
+                {isLoading ? (
+                     <div className="text-center p-8">Carregando...</div>
+                ) : activeTab === 'services' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {SERVICES.map(service => (
+                        {services.map(service => (
                             <div key={service.id} className="bg-white rounded-lg shadow p-6 flex flex-col justify-between border border-gray-200">
                                 <div>
                                     <h3 className="font-bold text-lg">{service.name}</h3>
@@ -208,10 +233,8 @@ const ClientPortal: React.FC<{ client: Client; onLogout: () => void; }> = ({ cli
                             </div>
                         ))}
                     </div>
-                )}
-
-                {activeTab === 'appointments' && (
-                    <MyApointments appointments={myAppointments} onCancel={handleCancelAppointment} />
+                ) : (
+                    <MyApointments appointments={myAppointments} onCancel={handleCancelAppointment} barbers={barbers} services={services} />
                 )}
             </main>
 
@@ -219,6 +242,7 @@ const ClientPortal: React.FC<{ client: Client; onLogout: () => void; }> = ({ cli
                 service={selectedService}
                 onClose={() => setIsBookingModalOpen(false)}
                 onConfirm={handleConfirmBooking}
+                barbers={barbers}
             />
         </div>
     );
