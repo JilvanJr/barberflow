@@ -3,6 +3,15 @@ import { APPOINTMENTS, BARBERS, CLIENTS, SERVICES } from '../constants';
 import { Appointment, Barber, Client, Service } from '../types';
 import { PlusIcon, XIcon, CalendarIcon, SearchIcon, ChevronDownIcon } from '../components/icons';
 
+// Helper to get today's date in YYYY-MM-DD format based on local timezone
+const getTodayLocalISOString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const CalendarPopup: React.FC<{
     selectedDate: string; // YYYY-MM-DD
     onDateChange: (date: string) => void;
@@ -91,7 +100,7 @@ const CalendarPopup: React.FC<{
             </div>
             <div className="flex justify-between mt-4 text-sm font-semibold border-t border-gray-700 pt-3">
                 <button type="button" onClick={onClose} className="text-blue-400 hover:text-blue-300">Limpar</button>
-                <button type="button" onClick={() => onDateChange(new Date().toISOString().split('T')[0])} className="text-blue-400 hover:text-blue-300">Hoje</button>
+                <button type="button" onClick={() => onDateChange(getTodayLocalISOString())} className="text-blue-400 hover:text-blue-300">Hoje</button>
             </div>
         </div>
     );
@@ -112,7 +121,7 @@ const AppointmentModal: React.FC<{
         clientId: '',
         serviceId: initialData?.serviceId?.toString() || '',
         barberId: initialData?.barberId?.toString() || '',
-        date: initialData?.date || new Date().toISOString().split('T')[0],
+        date: initialData?.date || getTodayLocalISOString(),
         startTime: initialData?.startTime || ''
     };
     
@@ -129,7 +138,7 @@ const AppointmentModal: React.FC<{
             clientId: '',
             serviceId: '',
             barberId: initialData?.barberId?.toString() || '',
-            date: initialData?.date || new Date().toISOString().split('T')[0],
+            date: initialData?.date || getTodayLocalISOString(),
             startTime: initialData?.startTime || ''
         });
         setStep(isPreFilled ? 2 : 1);
@@ -223,7 +232,10 @@ const AppointmentModal: React.FC<{
         setIsClientDropdownOpen(false);
     }
     
-    const filteredClients = clientSearch ? clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())) : clients;
+    const filteredClients = (clientSearch
+        ? clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+        : [...clients]
+    ).sort((a, b) => a.name.localeCompare(b.name));
     
     const stepHeaders: { [key: number]: string } = {
         1: "Passo 1 de 4: Selecione o Serviço",
@@ -311,7 +323,7 @@ const AppointmentModal: React.FC<{
                             }}
                             onFocus={() => setIsClientDropdownOpen(true)}
                             onBlur={() => setTimeout(() => setIsClientDropdownOpen(false), 150)}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                         />
                         {isClientDropdownOpen && (
                             <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg">
@@ -482,9 +494,9 @@ const AgendaPage: React.FC = () => {
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
                     <div className="relative">
-                        <button onClick={() => setIsCalendarOpen(prev => !prev)} className="flex items-center space-x-2 p-2 border rounded-md bg-white cursor-pointer">
+                        <button onClick={() => setIsCalendarOpen(prev => !prev)} className="flex items-center space-x-3 px-4 py-2 border border-gray-200 rounded-lg bg-white cursor-pointer shadow-sm hover:bg-gray-50">
                             <CalendarIcon className="w-5 h-5 text-gray-500"/>
                             <span className="font-semibold text-gray-700">{formatDate(selectedDate)}</span>
                         </button>
@@ -499,12 +511,12 @@ const AgendaPage: React.FC = () => {
                             />
                         )}
                     </div>
-                    <button onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])} className="px-4 py-2 border rounded-md bg-white font-semibold text-sm text-gray-700 hover:bg-gray-50">Hoje</button>
+                    <button onClick={() => setSelectedDate(getTodayLocalISOString())} className="px-4 py-2 border border-gray-200 rounded-lg bg-white font-semibold text-sm text-gray-700 hover:bg-gray-50 shadow-sm">Hoje</button>
                     {/* Placeholder filters */}
-                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border rounded-md bg-white text-sm text-gray-700"><option>Todos os Profissionais</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
-                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border rounded-md bg-white text-sm text-gray-700"><option>Tipo de Serviço</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
+                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Todos os Profissionais</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
+                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Tipo de Serviço</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
                     <div className="relative">
-                        <input type="text" placeholder="Buscar clientes agendados" className="w-64 pl-10 pr-4 py-2 border rounded-md text-sm" />
+                        <input type="text" placeholder="Buscar clientes agendados" className="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm shadow-sm" />
                         <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     </div>
                 </div>

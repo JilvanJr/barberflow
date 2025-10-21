@@ -21,34 +21,68 @@ const ClientModal: React.FC<{
         e.preventDefault();
         onSave(formData as Client);
     };
-    
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.substring(0, 11);
+        
+        let formattedValue = '';
+        if (value.length > 0) {
+            formattedValue = `(${value.substring(0, 2)}`;
+        }
+        if (value.length >= 3) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}`;
+        }
+        if (value.length >= 8) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+        }
+        setFormData({ ...formData, phone: formattedValue });
+    };
+
+    const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.substring(0, 8);
+
+        let formattedValue = value;
+        if (value.length > 2) {
+            formattedValue = `${value.substring(0, 2)}/${value.substring(2)}`;
+        }
+        if (value.length > 4) {
+             formattedValue = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
+        }
+        setFormData({ ...formData, birthDate: formattedValue });
+    }
+
+    const inputClasses = "w-full bg-gray-800 text-white rounded-lg p-3 border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
+    const labelClasses = "block text-sm font-medium text-gray-600 mb-1";
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold">{client?.id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
-                    <button onClick={onClose}><XIcon className="w-6 h-6" /></button>
+                    <h2 className="text-2xl font-bold text-gray-800">{client?.id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Nome</label>
-                        <input type="text" placeholder="Nome completo" required value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Nome</label>
+                        <input type="text" placeholder="Manuel Neuer" required value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClasses} />
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" placeholder="exemplo@email.com" required value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Email</label>
+                        <input type="email" placeholder="client@barberflow.com" required value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClasses} />
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Telefone</label>
-                        <input type="tel" placeholder="(11) 99999-9999" required value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Telefone</label>
+                        <input type="tel" placeholder="(11) 9 1234-5678" required value={formData.phone || ''} onChange={handlePhoneChange} className={inputClasses} maxLength={16} />
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700">CPF</label>
-                        <input type="text" placeholder="000.000.000-00" required value={formData.cpf || ''} onChange={e => setFormData({...formData, cpf: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Data de Nascimento</label>
+                        <input type="text" placeholder="DD/MM/AAAA" value={formData.birthDate || ''} onChange={handleBirthDateChange} className={inputClasses} maxLength={10} />
                     </div>
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
-                        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                    <div className="flex justify-end space-x-4 pt-4">
+                        <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                        <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
                     </div>
                 </form>
             </div>
