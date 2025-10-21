@@ -1,0 +1,5 @@
+{
+  "name": "BarberFlow",
+  "description": "A complete management system for small barbershops, allowing barbers to manage their schedule, clients, services, and finances through an intuitive dashboard.",
+  "requestFramePermissions": []
+}
