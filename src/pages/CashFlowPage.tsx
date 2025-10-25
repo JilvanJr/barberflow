@@ -3,13 +3,13 @@
 import React, { useState, useCallback, useEffect, useMemo, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Transaction, TransactionType, User } from '../types';
+import { Transaction, TransactionType, User, Role } from '../types';
 import { PlusIcon, XIcon, CheckCircleIcon, TrashIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
 const TransactionModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (transaction: Omit<Transaction, 'id' | 'date' | 'paymentStatus'>) => void;
+    onSave: (transaction: Omit<Transaction, 'id' | 'date' | 'paymentStatus' | 'completedBy'>) => void;
 }> = ({ isOpen, onClose, onSave }) => {
     const initialFormState = {
         name: '',
@@ -33,32 +33,35 @@ const TransactionModal: React.FC<{
         onClose();
     };
 
+    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold">Nova Transação</h2>
-                    <button onClick={onClose}><XIcon className="w-6 h-6" /></button>
+                    <h2 className="text-2xl font-bold text-gray-800">Nova Transação</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Descrição</label>
-                        <input type="text" placeholder="Ex: Corte Cliente X" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Descrição</label>
+                        <input type="text" placeholder="Ex: Compra de material" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClasses} />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Valor (R$)</label>
-                        <input type="number" placeholder="0,00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className="mt-1 w-full p-2 border border-gray-300 rounded-md" />
+                        <label className={labelClasses}>Valor (R$)</label>
+                        <input type="number" placeholder="0.00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className={inputClasses} />
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Tipo</label>
-                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TransactionType})} className="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                        <label className={labelClasses}>Tipo</label>
+                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TransactionType})} className={inputClasses}>
                             <option value={TransactionType.INCOME}>Entrada</option>
                             <option value={TransactionType.EXPENSE}>Saída</option>
                         </select>
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Método de Pagamento</label>
-                        <select value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})} className="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                        <label className={labelClasses}>Método de Pagamento</label>
+                        <select value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})} className={inputClasses}>
                             <option>Pix</option>
                             <option>Cartão de Crédito</option>
                             <option>Cartão de Débito</option>
@@ -66,9 +69,9 @@ const TransactionModal: React.FC<{
                             <option>Retirada</option>
                         </select>
                     </div>
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
-                        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                    <div className="flex justify-end space-x-4 pt-4">
+                         <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                        <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -128,8 +131,8 @@ const PaymentConfirmationModal: React.FC<{
                         <input type="text" disabled value={`R$ ${transaction.value.toFixed(2).replace('.', ',')}`} className={inputClasses} />
                     </div>
                     <div>
-                        <label className={labelClasses}>Método de Pagamento</label>
-                        <select value={method} onChange={e => setMethod(e.target.value)} className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <label className={`${labelClasses} text-gray-700`}>Método de Pagamento</label>
+                        <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
                             <option>Pix</option>
                             <option>Cartão de Crédito</option>
                             <option>Cartão de Débito</option>
@@ -137,13 +140,13 @@ const PaymentConfirmationModal: React.FC<{
                         </select>
                     </div>
                 </div>
-                <div className="flex justify-end items-center space-x-4 pt-8">
-                     {canDelete && (
+                <div className="flex justify-between items-center pt-8 mt-6 border-t border-gray-200">
+                     {canDelete ? (
                         <button onClick={handleDelete} type="button" className="text-sm font-semibold text-red-600 hover:text-red-800 flex items-center space-x-1">
                             <TrashIcon className="w-4 h-4" />
                             <span>Excluir Ordem</span>
                         </button>
-                    )}
+                    ) : <div />}
                     <button onClick={handleSave} type="submit" className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
                         Salvar e Finalizar
                     </button>
@@ -166,8 +169,11 @@ const CashFlowPage: React.FC = () => {
     const [itemsPerPage] = useState(10);
     const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction | null; direction: 'ascending' | 'descending' }>({ key: 'date', direction: 'descending' });
 
-    // FIX: Cast currentUser to User to safely access permissions.
-    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+    if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
+        return <div className="text-center p-8">Acesso não autorizado.</div>;
+    }
+    const { currentUser } = context;
+    const currentUserPermissions = currentUser.permissions;
 
     const fetchTransactions = useCallback(async () => {
         setIsLoading(true);
@@ -242,11 +248,12 @@ const CashFlowPage: React.FC = () => {
     const totalExpense = transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((acc, t) => acc + t.value, 0);
     const balance = totalIncome - totalExpense;
 
-    const handleSave = useCallback(async (newTransaction: Omit<Transaction, 'id' | 'date' | 'paymentStatus'>) => {
-        await api.createTransaction(newTransaction);
+    const handleSave = useCallback(async (newTransaction: Omit<Transaction, 'id' | 'date' | 'paymentStatus' | 'completedBy'>) => {
+        if (!currentUser) return;
+        await api.createTransaction(newTransaction, currentUser.name);
         setIsModalOpen(false);
         fetchTransactions();
-    }, [fetchTransactions]);
+    }, [fetchTransactions, currentUser]);
     
     const handleOpenPaymentModal = (transaction: Transaction) => {
         setSelectedTransaction(transaction);
@@ -254,7 +261,8 @@ const CashFlowPage: React.FC = () => {
     };
 
     const handleSavePayment = async (transactionId: string, newMethod: string) => {
-        await api.confirmPayment(transactionId, newMethod);
+        if (!currentUser) return;
+        await api.confirmPayment(transactionId, newMethod, currentUser.name);
         setIsPaymentModalOpen(false);
         setSelectedTransaction(null);
         fetchTransactions();
@@ -365,17 +373,25 @@ const CashFlowPage: React.FC = () => {
                                         <button onClick={() => handleOpenPaymentModal(transaction)} className="text-gray-800 bg-yellow-300 hover:bg-yellow-400 font-medium rounded-lg text-xs px-3 py-1.5 text-center">
                                             Confirmar
                                         </button>
-                                    ) : transaction.paymentStatus === 'pending' && !currentUserPermissions?.canConfirmPayment ? (
+                                    ) : transaction.paymentStatus === 'pending' ? (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                             Pendente
                                         </span>
                                     ) : (
-                                         transaction.type === TransactionType.INCOME && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <CheckCircleIcon className="w-4 h-4 mr-1.5" />
-                                                Finalizado
-                                            </span>
-                                         )
+                                        transaction.paymentStatus === 'completed' && (
+                                            <div className="relative group flex items-center">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <CheckCircleIcon className="w-4 h-4 mr-1.5" />
+                                                    Finalizado
+                                                </span>
+                                                {transaction.completedBy && (
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 scale-95 group-hover:scale-100 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-10">
+                                                        Finalizado por: {transaction.completedBy}
+                                                        <svg className="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
                                     )}
                                 </td>
                             </tr>

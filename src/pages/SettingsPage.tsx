@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { User, Permissions } from '../types';
+import { User, Permissions, OperatingHours, DayHours } from '../types';
 
 const PermissionCheckbox: React.FC<{
     id: string;
@@ -31,28 +31,16 @@ const PermissionCheckbox: React.FC<{
     );
 };
 
-const PermissionsPage: React.FC = () => {
+const PermissionsContent: React.FC = () => {
     const context = useContext(AppContext);
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [userPermissions, setUserPermissions] = useState<Permissions | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    if (!context) {
-        return <div className="text-center p-8">Carregando contexto...</div>;
-    }
-
-    const { users, currentUser, setUsers } = context;
-
+    if (!context) return null;
+    const { users, currentUser, setUsers, selectedUserIdForPermissions, setSelectedUserIdForPermissions } = context;
     const otherUsers = users.filter(u => u.id !== currentUser?.id) || [];
-
-    useEffect(() => {
-        if (otherUsers.length > 0 && !selectedUserId) {
-            const firstUser = otherUsers[0];
-            setSelectedUserId(firstUser.id);
-            setUserPermissions(JSON.parse(JSON.stringify(firstUser.permissions)));
-        }
-    }, [users, selectedUserId, otherUsers]);
 
     const handleUserSelect = (userId: number) => {
         const selectedUser = users.find(u => u.id === userId);
@@ -62,6 +50,19 @@ const PermissionsPage: React.FC = () => {
         }
     };
     
+    useEffect(() => {
+        if (selectedUserIdForPermissions) {
+            const userExists = otherUsers.some(u => u.id === selectedUserIdForPermissions);
+            if (userExists) {
+                handleUserSelect(selectedUserIdForPermissions);
+            }
+            setSelectedUserIdForPermissions(null);
+        } else if (otherUsers.length > 0 && !selectedUserId) {
+            const firstUser = otherUsers[0];
+            handleUserSelect(firstUser.id);
+        }
+    }, [users, selectedUserId, selectedUserIdForPermissions]);
+
     const handlePermissionChange = (key: keyof Permissions, value: boolean) => {
         if (userPermissions) {
             setUserPermissions({ ...userPermissions, [key]: value });
@@ -73,11 +74,7 @@ const PermissionsPage: React.FC = () => {
             setIsSaving(true);
             try {
                 const updatedUser = await api.updateUserPermissions(selectedUserId, userPermissions);
-                setUsers(prevUsers =>
-                    prevUsers.map(user =>
-                        user.id === selectedUserId ? updatedUser : user
-                    )
-                );
+                setUsers(prevUsers => prevUsers.map(user => user.id === selectedUserId ? updatedUser : user));
                 setShowSuccess(true);
                 setTimeout(() => setShowSuccess(false), 3000);
             } catch (error) {
@@ -114,9 +111,9 @@ const PermissionsPage: React.FC = () => {
             ]
         },
         {
-            title: 'Fluxo de Caixa',
+            title: 'Caixa',
             permissions: [
-                 { key: 'canViewCashFlow', label: 'Ver Fluxo de Caixa', description: 'Dá acesso à tela de fluxo de caixa e à tabela de transações.' },
+                 { key: 'canViewCashFlow', label: 'Ver Caixa', description: 'Dá acesso à tela de Caixa e à tabela de transações.' },
                  { key: 'canViewCashFlowDashboard', label: 'Ver Resumo Financeiro', description: 'Permite ver os cards de Receita, Despesa e Saldo.' },
                  { key: 'canConfirmPayment', label: 'Confirmar Pagamentos', description: 'Permite finalizar transações pendentes de agendamentos.' },
                  { key: 'canAddTransaction', label: 'Adicionar Transação Manual', description: 'Permite registrar novas entradas ou saídas manualmente.' },
@@ -162,7 +159,6 @@ const PermissionsPage: React.FC = () => {
                     ))}
                 </div>
             </div>
-
             <div className="lg:col-span-2">
                 {userPermissions && selectedUser ? (
                     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -172,7 +168,6 @@ const PermissionsPage: React.FC = () => {
                             </h2>
                             <p className="text-sm text-gray-500 mt-1">Selecione as ações que este usuário poderá realizar no sistema.</p>
                         </div>
-
                         <div className="space-y-8">
                             {permissionGroups.map(group => (
                                  <fieldset key={group.title}>
@@ -214,4 +209,139 @@ const PermissionsPage: React.FC = () => {
     );
 };
 
-export default PermissionsPage;
+const OperatingHoursContent: React.FC = () => {
+    const [operatingHours, setOperatingHours] = useState<OperatingHours | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        api.getOperatingHours().then(setOperatingHours);
+    }, []);
+
+    const handleHoursChange = (day: keyof OperatingHours, field: keyof DayHours, value: any) => {
+        setOperatingHours(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [day]: {
+                    ...prev[day],
+                    [field]: value
+                }
+            };
+        });
+    };
+
+    const handleSaveChanges = async () => {
+        if (operatingHours) {
+            setIsSaving(true);
+            try {
+                await api.updateOperatingHours(operatingHours);
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+            } catch (error) {
+                console.error("Failed to save operating hours", error);
+                alert("Erro ao salvar o horário de funcionamento.");
+            } finally {
+                setIsSaving(false);
+            }
+        }
+    };
+    
+    if (!operatingHours) {
+        return <div className="text-center p-8">Carregando horário de funcionamento...</div>;
+    }
+
+    const dayNames: { [key in keyof OperatingHours]: string } = {
+        monday: 'Segunda-feira', tuesday: 'Terça-feira', wednesday: 'Quarta-feira',
+        thursday: 'Quinta-feira', friday: 'Sexta-feira', saturday: 'Sábado', sunday: 'Domingo'
+    };
+    
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-4xl mx-auto">
+            <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-800">Horário de Funcionamento</h2>
+                <p className="text-sm text-gray-500 mt-1">Defina os horários de funcionamento da barbearia que serão refletidos na agenda.</p>
+            </div>
+            <div className="space-y-4">
+                {Object.keys(dayNames).map(day => (
+                    <div key={day} className="grid grid-cols-1 md:grid-cols-4 items-center gap-4 p-4 border-b last:border-b-0">
+                        <div className="md:col-span-1">
+                             <label className="flex items-center space-x-3">
+                                <input
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                                    checked={operatingHours[day as keyof OperatingHours].isOpen}
+                                    onChange={e => handleHoursChange(day as keyof OperatingHours, 'isOpen', e.target.checked)}
+                                />
+                                <span className="font-semibold text-gray-700">{dayNames[day as keyof OperatingHours]}</span>
+                            </label>
+                        </div>
+                        <div className="md:col-span-3 grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm text-gray-500 block mb-1">Abre às</label>
+                                <input
+                                    type="time"
+                                    className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200"
+                                    value={operatingHours[day as keyof OperatingHours].openTime}
+                                    onChange={e => handleHoursChange(day as keyof OperatingHours, 'openTime', e.target.value)}
+                                    disabled={!operatingHours[day as keyof OperatingHours].isOpen}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-500 block mb-1">Fecha às</label>
+                                <input
+                                    type="time"
+                                    className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200"
+                                    value={operatingHours[day as keyof OperatingHours].closeTime}
+                                    onChange={e => handleHoursChange(day as keyof OperatingHours, 'closeTime', e.target.value)}
+                                    disabled={!operatingHours[day as keyof OperatingHours].isOpen}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="flex justify-end items-center space-x-4 pt-6 mt-6 border-t border-gray-200">
+                 {showSuccess && <p className="text-sm font-medium text-green-600 animate-pulse">Horários salvos com sucesso!</p>}
+                <button
+                    onClick={handleSaveChanges}
+                    disabled={isSaving}
+                    className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                >
+                    {isSaving ? 'Salvando...' : 'Salvar Horários'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const SettingsPage: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<'permissions' | 'operatingHours'>('permissions');
+    
+    const TabButton: React.FC<{ tabName: typeof activeTab, label: string }> = ({ tabName, label }) => {
+        const isActive = activeTab === tabName;
+        return (
+             <button
+                onClick={() => setActiveTab(tabName)}
+                className={`px-4 py-2 font-semibold text-sm rounded-md transition-colors ${
+                    isActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+                {label}
+            </button>
+        );
+    };
+
+    return (
+        <div>
+            <div className="mb-6 flex items-center space-x-2 border-b border-gray-200 pb-4">
+                <TabButton tabName="permissions" label="Permissões" />
+                <TabButton tabName="operatingHours" label="Horário de Funcionamento" />
+            </div>
+            
+            {activeTab === 'permissions' ? <PermissionsContent /> : <OperatingHoursContent />}
+        </div>
+    );
+};
+
+export default SettingsPage;

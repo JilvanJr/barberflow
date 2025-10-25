@@ -8,7 +8,7 @@ import AuthPage from './pages/AuthPage';
 import ClientPortal from './pages/ClientPortal';
 import { api } from './api';
 
-export type Page = 'Home' | 'Agenda' | 'Clientes' | 'Serviços' | 'Fluxo de Caixa' | 'Equipe' | 'Permissões';
+export type Page = 'Home' | 'Agenda' | 'Clientes' | 'Serviços' | 'Caixa' | 'Equipe' | 'Configurações';
 
 interface AppContextType {
   activePage: Page;
@@ -20,12 +20,13 @@ interface AppContextType {
   token: string | null;
   setToken: (token: string | null) => void;
   isLoading: boolean;
+  selectedUserIdForPermissions: number | null;
+  setSelectedUserIdForPermissions: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
 
 const StaffPortal: React.FC = () => {
-  // FIX: useContext was not defined. It is now imported from React.
   const context = useContext(AppContext);
   if (!context) throw new Error('Context is missing');
 
@@ -57,6 +58,7 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'));
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedUserIdForPermissions, setSelectedUserIdForPermissions] = useState<number | null>(null);
 
   const handleLogin = useCallback((user: User | Client, authToken: string) => {
     localStorage.setItem('authToken', authToken);
@@ -96,11 +98,12 @@ const App: React.FC = () => {
     setUsers,
     token,
     setToken: (t: string | null) => setToken(t),
-    // FIX: Explicitly cast 'Home' to Page type to satisfy AppContextType.
     activePage: 'Home' as Page, // Default value, will be overridden in StaffPortal
     setActivePage: () => {}, // Default value
-    isLoading
-  }), [currentUser, handleLogout, users, token, isLoading]);
+    isLoading,
+    selectedUserIdForPermissions,
+    setSelectedUserIdForPermissions,
+  }), [currentUser, handleLogout, users, token, isLoading, selectedUserIdForPermissions]);
 
   if (isLoading) {
     return (

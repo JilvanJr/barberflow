@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { AppContext } from '../App';
@@ -7,15 +7,17 @@ import ClientsPage from '../pages/ClientsPage';
 import ServicesPage from '../pages/ServicesPage';
 import CashFlowPage from '../pages/CashFlowPage';
 import TeamPage from '../pages/TeamPage';
-import PermissionsPage from '../pages/PermissionsPage';
+import SettingsPage from '../pages/SettingsPage';
+import HomePage from '../pages/HomePage';
 
 const Dashboard: React.FC = () => {
     const context = useContext(AppContext);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const renderContent = () => {
         switch (context?.activePage) {
-            // FIX: Add 'Home' case to render AgendaPage as the home screen.
             case 'Home':
+                return <HomePage />;
             case 'Agenda':
                 return <AgendaPage />;
             case 'Clientes':
@@ -24,18 +26,18 @@ const Dashboard: React.FC = () => {
                 return <ServicesPage />;
             case 'Equipe':
                 return <TeamPage />;
-            case 'Fluxo de Caixa':
+            case 'Caixa':
                 return <CashFlowPage />;
-            case 'Permissões':
-                return <PermissionsPage />;
+            case 'Configurações':
+                return <SettingsPage />;
             default:
-                return <AgendaPage />;
+                return <HomePage />;
         }
     };
 
     return (
         <div className="flex h-screen bg-gray-100">
-            <Sidebar />
+            <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header />
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">

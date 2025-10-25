@@ -66,6 +66,10 @@ export interface Barber {
   name: string;
   avatarUrl: string;
   email?: string;
+  workStartTime?: string; // "HH:MM"
+  workEndTime?: string; // "HH:MM"
+  lunchStartTime?: string; // "HH:MM"
+  lunchEndTime?: string; // "HH:MM"
 }
 
 export interface Appointment {
@@ -92,4 +96,20 @@ export interface Transaction {
     value: number;
     appointmentId?: number;
     paymentStatus: 'pending' | 'completed';
+    completedBy?: string;
+}
+
+export interface DayHours {
+  isOpen: boolean;
+  openTime: string; // "HH:MM"
+  closeTime: string; // "HH:MM"
+}
+
+export type OperatingHours = {
+  [day in 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday']: DayHours;
+};
+
+export interface BarberLeave {
+  barberId: number;
+  date: string; // "YYYY-MM-DD"
 }

@@ -4,6 +4,18 @@ type IconProps = {
   className?: string;
 };
 
+export const ChevronsLeftIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline>
+    </svg>
+);
+
+export const TrendingUpIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+    </svg>
+);
+
 export const MustacheIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M152.5,95.5c-4.2-2.3-33.8-21.3-33.8-21.3c-2.6-1.7-5.9-1.7,8.5,0c-1.3,0.8-30.8,19-33.8,21.3c-13,7.1-23.4,14.2-23.4,24.3c0,10.1,10.4,14.2,23.4,14.2c13,0,16.1-4,20.3-6.2c4.2-2.3,20.3-12.7,20.3-12.7c2.6-1.7,5.9-1.7,8.5,0c0,0,16.1,10.4,20.3,12.7c4.2,2.3,7.3,6.2,20.3,6.2c13,0,23.4-4,23.4-14.2C175.9,109.7,165.5,102.6,152.5,95.5z"/>
@@ -144,5 +156,17 @@ export const ArrowDownIcon: React.FC<IconProps> = ({ className }) => (
 export const ShieldCheckIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>
+    </svg>
+);
+
+export const UserIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+    </svg>
+);
+
+export const LockIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
     </svg>
 );

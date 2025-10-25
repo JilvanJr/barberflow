@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Appointment, Barber, Client, Service, User } from '../types';
+import { Appointment, Barber, Client, Service, User, Role, OperatingHours } from '../types';
 import { PlusIcon, XIcon, CalendarIcon, SearchIcon, ChevronDownIcon } from '../components/icons';
 
 // Helper to get today's date in YYYY-MM-DD format based on local timezone
@@ -12,6 +12,12 @@ const getTodayLocalISOString = () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+// Helper to convert "HH:MM" to minutes from midnight
+const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
 };
 
 const CalendarPopup: React.FC<{
@@ -59,14 +65,14 @@ const CalendarPopup: React.FC<{
         
         for (let i = firstDayOfMonth; i > 0; i--) {
             const day = daysInPrevMonth - i + 1;
-            days.push(<div key={`prev-${day}`} className="w-8 h-8 flex items-center justify-center text-sm text-gray-500">{day}</div>);
+            days.push(<div key={`prev-${day}`} className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">{day}</div>);
         }
         
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDate = new Date(year, month, day);
             const isSelected = selected.getTime() === currentDate.getTime();
             
-            const className = `w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-600'}`;
+            const className = `w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 text-gray-700'}`;
             days.push(<button key={day} type="button" onClick={() => handleDateClick(day)} className={className}>{day}</button>);
         }
         
@@ -74,7 +80,7 @@ const CalendarPopup: React.FC<{
         const cellsToFill = totalRendered > 35 ? 42 - totalRendered : 35 - totalRendered;
 
         for (let i = 1; i <= cellsToFill; i++) {
-             days.push(<div key={`next-${i}`} className="w-8 h-8 flex items-center justify-center text-sm text-gray-500">{i}</div>);
+             days.push(<div key={`next-${i}`} className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">{i}</div>);
         }
         return days;
     };
@@ -82,27 +88,27 @@ const CalendarPopup: React.FC<{
     const monthYearFormat = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
 
     return (
-        <div ref={calendarRef} className="absolute top-full mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-lg z-20 p-4 w-72">
+        <div ref={calendarRef} className="absolute top-full mt-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-lg z-20 p-4 w-72">
             <div className="flex justify-between items-center mb-4">
                 <span className="font-semibold text-sm capitalize">{monthYearFormat.format(viewDate)}</span>
                 <div className="flex items-center space-x-2">
-                    <button type="button" onClick={handlePrevMonth} className="p-1 rounded-full hover:bg-gray-700">
-                        <svg className="w-4 h-4 transform rotate-180" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path></svg>
+                    <button type="button" onClick={handlePrevMonth} className="p-1 rounded-full hover:bg-gray-100">
+                        <svg className="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
-                    <button type="button" onClick={handleNextMonth} className="p-1 rounded-full hover:bg-gray-700">
-                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path></svg>
+                    <button type="button" onClick={handleNextMonth} className="p-1 rounded-full hover:bg-gray-100">
+                         <svg className="w-4 h-4 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2 font-bold">
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-2 font-bold">
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => <div key={i}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-y-1 place-items-center">
                 {renderDays()}
             </div>
-            <div className="flex justify-between mt-4 text-sm font-semibold border-t border-gray-700 pt-3">
-                <button type="button" onClick={onClose} className="text-blue-400 hover:text-blue-300">Limpar</button>
-                <button type="button" onClick={() => onDateChange(getTodayLocalISOString())} className="text-blue-400 hover:text-blue-300">Hoje</button>
+            <div className="flex justify-between mt-4 text-sm font-semibold border-t border-gray-200 pt-3">
+                <button type="button" onClick={onClose} className="text-gray-600 hover:text-blue-600">Fechar</button>
+                <button type="button" onClick={() => onDateChange(getTodayLocalISOString())} className="text-blue-600 hover:text-blue-800">Hoje</button>
             </div>
         </div>
     );
@@ -116,8 +122,9 @@ const AppointmentModal: React.FC<{
     services: Service[];
     barbers: Barber[];
     appointments: Appointment[];
+    operatingHours: OperatingHours;
     initialData?: Partial<Omit<Appointment, 'id' | 'endTime'>>;
-}> = ({ isOpen, onClose, onSave, clients, services, barbers, appointments, initialData }) => {
+}> = ({ isOpen, onClose, onSave, clients, services, barbers, appointments, operatingHours, initialData }) => {
     
     const initialAppointmentState = {
         clientId: '',
@@ -165,28 +172,50 @@ const AppointmentModal: React.FC<{
         }
 
         const selectedService = services.find(s => s.id === Number(appointmentData.serviceId));
-        if (!selectedService) {
+        const selectedBarber = barbers.find(b => b.id === Number(appointmentData.barberId));
+        if (!selectedService || !selectedBarber) {
             setAvailableTimes([]);
             return;
         }
 
+        const dayOfWeek = new Date(appointmentData.date + 'T00:00:00').toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
+        const dayOperatingHours = operatingHours[dayOfWeek];
+
+        if (!dayOperatingHours.isOpen) {
+            setAvailableTimes([]);
+            return;
+        }
+        
         const barberAppointments = appointments
             .filter(app => app.barberId === Number(appointmentData.barberId) && app.date === appointmentData.date)
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
         const newAvailableTimes: string[] = [];
-        const dayStart = 9 * 60; // 9:00 in minutes
-        const dayEnd = 19 * 60;   // 19:00 in minutes
+        
+        const shopOpen = timeToMinutes(dayOperatingHours.openTime);
+        const shopClose = timeToMinutes(dayOperatingHours.closeTime);
+        const barberWorkStart = timeToMinutes(selectedBarber.workStartTime || '00:00');
+        const barberWorkEnd = timeToMinutes(selectedBarber.workEndTime || '23:59');
+        const barberLunchStart = timeToMinutes(selectedBarber.lunchStartTime || '00:00');
+        const barberLunchEnd = timeToMinutes(selectedBarber.lunchEndTime || '00:00');
+
+        const dayStart = Math.max(shopOpen, barberWorkStart);
+        const dayEnd = Math.min(shopClose, barberWorkEnd);
         const serviceDuration = selectedService.duration;
 
         for (let time = dayStart; time <= dayEnd - serviceDuration; time += 15) { // Check every 15 minutes
             const slotStart = time;
             const slotEnd = time + serviceDuration;
             
+            // Check for lunch break
+            if (slotStart < barberLunchEnd && slotEnd > barberLunchStart) {
+                continue;
+            }
+
             let isAvailable = true;
             for (const app of barberAppointments) {
-                const appStart = parseInt(app.startTime.split(':')[0]) * 60 + parseInt(app.startTime.split(':')[1]);
-                const appEnd = parseInt(app.endTime.split(':')[0]) * 60 + parseInt(app.endTime.split(':')[1]);
+                const appStart = timeToMinutes(app.startTime);
+                const appEnd = timeToMinutes(app.endTime);
 
                 if (slotStart < appEnd && slotEnd > appStart) {
                     isAvailable = false;
@@ -201,7 +230,7 @@ const AppointmentModal: React.FC<{
             }
         }
         setAvailableTimes(newAvailableTimes);
-    }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointments, services]);
+    }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointments, services, barbers, operatingHours]);
     
     // Effect for managing wizard steps
     useEffect(() => {
@@ -311,7 +340,7 @@ const AppointmentModal: React.FC<{
                                 <button key={time} type="button" onClick={() => setAppointmentData({...appointmentData, startTime: time})} className={`p-2 rounded text-sm font-semibold ${appointmentData.startTime === time ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}>
                                     {time}
                                 </button>
-                            )) : <p className="text-sm text-gray-500 col-span-4">Nenhum horário disponível para esta data/barbeiro.</p>}
+                            )) : <p className="text-sm text-gray-500 col-span-4">Nenhum horário disponível. Verifique o horário da barbearia e do profissional.</p>}
                          </div>
                      </div>
 
@@ -418,6 +447,7 @@ const AgendaPage: React.FC = () => {
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+    const [operatingHours, setOperatingHours] = useState<OperatingHours | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const [initialModalData, setInitialModalData] = useState<Partial<Appointment> | undefined>();
@@ -425,23 +455,28 @@ const AgendaPage: React.FC = () => {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
-    // FIX: Cast currentUser to User to safely access permissions.
-    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+    if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
+        return <div className="text-center p-8">Acesso não autorizado.</div>;
+    }
+    const { currentUser } = context;
+    const currentUserPermissions = currentUser.permissions;
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [appointmentsData, barbersData, clientsData, servicesData] = await Promise.all([
+                const [appointmentsData, barbersData, clientsData, servicesData, opHoursData] = await Promise.all([
                     api.getAppointments(),
                     api.getBarbers(),
                     api.getClients(),
-                    api.getServices()
+                    api.getServices(),
+                    api.getOperatingHours()
                 ]);
                 setAppointments(appointmentsData);
                 setBarbers(barbersData);
                 setClients(clientsData);
                 setServices(servicesData);
+                setOperatingHours(opHoursData);
             } catch (error) {
                 console.error("Failed to fetch agenda data:", error);
             } finally {
@@ -480,20 +515,16 @@ const AgendaPage: React.FC = () => {
     const todaysAppointments = useMemo(() => appointments.filter(a => a.date === selectedDate), [appointments, selectedDate]);
     
     const timeToPosition = (time: string) => {
-        const [hour, minute] = time.split(':').map(Number);
-        const totalMinutesFromStart = (hour - 9) * 60 + minute;
+        const totalMinutesFromStart = timeToMinutes(time) - timeToMinutes('09:00');
         return totalMinutesFromStart * pixelsPerMinute;
     };
 
     const getAppointmentDuration = (startTime: string, endTime: string) => {
-        const start = new Date(`1970-01-01T${startTime}:00`);
-        const end = new Date(`1970-01-01T${endTime}:00`);
-        return (end.getTime() - start.getTime()) / (1000 * 60);
+        return timeToMinutes(endTime) - timeToMinutes(startTime);
     }
 
     const handleSlotClick = (barberId: number, e: React.MouseEvent<HTMLDivElement>) => {
         if (!currentUserPermissions?.canCreateAppointment) return;
-        // Prevent opening new appointment modal if clicking on an existing one
         if ((e.target as HTMLElement).closest('.appointment-card')) {
             return;
         }
@@ -504,8 +535,9 @@ const AgendaPage: React.FC = () => {
         const minutesFromStart = Math.floor(offsetY / pixelsPerMinute);
         const snappedMinutes = Math.floor(minutesFromStart / 15) * 15;
         
-        const hour = 9 + Math.floor(snappedMinutes / 60);
-        const minute = snappedMinutes % 60;
+        const totalMinutes = timeToMinutes('09:00') + snappedMinutes;
+        const hour = Math.floor(totalMinutes / 60);
+        const minute = totalMinutes % 60;
         const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         
         setInitialModalData({
@@ -526,7 +558,7 @@ const AgendaPage: React.FC = () => {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').replace(/ de /g, ' ');
     }
     
-    if (isLoading) {
+    if (isLoading || !operatingHours) {
         return <div className="text-center p-8">Carregando agenda...</div>;
     }
 
@@ -551,8 +583,7 @@ const AgendaPage: React.FC = () => {
                         )}
                     </div>
                     <button onClick={() => setSelectedDate(getTodayLocalISOString())} className="px-4 py-2 border border-gray-200 rounded-lg bg-white font-semibold text-sm text-gray-700 hover:bg-gray-50 shadow-sm">Hoje</button>
-                    {/* Placeholder filters */}
-                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Todos os Profissionais</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
+                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Todos os Profiss...</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
                     <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Tipo de Serviço</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
                     <div className="relative">
                         <input type="text" placeholder="Buscar clientes agendados" className="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm shadow-sm" />
@@ -572,7 +603,7 @@ const AgendaPage: React.FC = () => {
                     <div className="w-24 flex-shrink-0"></div> {/* Time column spacer */}
                     <div className="flex-1 grid" style={{gridTemplateColumns: `repeat(${barbers.length}, 1fr)`}}>
                          {barbers.map(barber => (
-                            <div key={barber.id} className="p-4 text-center">
+                            <div key={barber.id} className="p-4 text-center border-l border-gray-100 first:border-l-0">
                                 <img src={barber.avatarUrl} alt={barber.name} className="w-12 h-12 rounded-full mx-auto mb-2"/>
                                 <p className="font-semibold text-gray-700">{barber.name}</p>
                             </div>
@@ -603,6 +634,35 @@ const AgendaPage: React.FC = () => {
                                     className={`relative ${index > 0 ? 'border-l border-gray-100' : ''}`}
                                     onClick={(e) => handleSlotClick(barber.id, e)}
                                 >
+                                    {/* Unavailable slots renderer */}
+                                    <div className="absolute inset-0">
+                                        {/* Lunch Break */}
+                                        {barber.lunchStartTime && barber.lunchEndTime && (
+                                            <div 
+                                                className="absolute w-full bg-orange-100 border-y border-dashed border-orange-300 z-0"
+                                                style={{
+                                                    top: timeToPosition(barber.lunchStartTime),
+                                                    height: getAppointmentDuration(barber.lunchStartTime, barber.lunchEndTime) * pixelsPerMinute,
+                                                }}
+                                            ><span className="text-xs text-orange-600 font-semibold absolute top-1 left-2">Almoço</span></div>
+                                        )}
+                                        {/* Off Work */}
+                                        <div 
+                                            className="absolute w-full bg-gray-100 z-0"
+                                            style={{
+                                                top: 0,
+                                                height: timeToPosition(barber.workStartTime || '09:00'),
+                                            }}
+                                        />
+                                        <div 
+                                            className="absolute w-full bg-gray-100 z-0"
+                                            style={{
+                                                top: timeToPosition(barber.workEndTime || '19:30'),
+                                                bottom: 0,
+                                            }}
+                                        />
+                                    </div>
+                                    {/* Appointments */}
                                     {todaysAppointments.filter(a => a.barberId === barber.id).map(app => {
                                         const client = clients.find(c => c.id === app.clientId);
                                         const service = services.find(s => s.id === app.serviceId);
@@ -640,6 +700,7 @@ const AgendaPage: React.FC = () => {
                     services={services}
                     barbers={barbers}
                     appointments={appointments}
+                    operatingHours={operatingHours}
                     initialData={initialModalData}
                 />
             )}

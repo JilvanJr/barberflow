@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -165,7 +166,11 @@ const ClientsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<Partial<Client> | null>(null);
 
-    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+    if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
+        return <div className="text-center p-8">Acesso não autorizado.</div>;
+    }
+    const { currentUser } = context;
+    const currentUserPermissions = currentUser.permissions;
 
     const fetchClients = useCallback(async () => {
         setIsLoading(true);

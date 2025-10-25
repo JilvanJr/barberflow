@@ -5,8 +5,8 @@
  * and manipulates data in sessionStorage to simulate a persistent database.
  * This approach makes the mock API stateful across page reloads.
  */
-import { USERS, CLIENTS, SERVICES, BARBERS, APPOINTMENTS, TRANSACTIONS, fullAdminPermissions, defaultBarberPermissions } from './constants';
-import { User, Client, Service, Barber, Appointment, Transaction, TransactionType, Role, Permissions } from './types';
+import { USERS, CLIENTS, SERVICES, BARBERS, APPOINTMENTS, TRANSACTIONS, DEFAULT_OPERATING_HOURS } from './constants';
+import { User, Client, Service, Barber, Appointment, Transaction, TransactionType, Role, Permissions, OperatingHours, BarberLeave } from './types';
 
 const NETWORK_DELAY = 300; // ms
 
@@ -40,6 +40,8 @@ const initializeData = () => {
     storage.set('api_barbers', BARBERS);
     storage.set('api_appointments', APPOINTMENTS);
     storage.set('api_transactions', TRANSACTIONS);
+    storage.set('api_operating_hours', DEFAULT_OPERATING_HOURS);
+    storage.set('api_barber_leaves', []);
     sessionStorage.setItem('api_initialized', 'true');
   }
 };
@@ -160,6 +162,10 @@ export const api = {
         const newBarber: Barber = {
             id: Date.now(), name: barberData.name || '', email: barberData.email || '',
             avatarUrl: barberData.avatarUrl || `https://i.pravatar.cc/150?u=${Date.now()}`,
+            workStartTime: barberData.workStartTime || '09:00',
+            workEndTime: barberData.workEndTime || '19:00',
+            lunchStartTime: barberData.lunchStartTime || '12:00',
+            lunchEndTime: barberData.lunchEndTime || '13:00',
         };
         storage.set('api_barbers', [...barbers, newBarber]);
         return newBarber;
@@ -242,24 +248,25 @@ export const api = {
         }
         return transactions;
     },
-    async createTransaction(transData: Omit<Transaction, 'id'|'date'|'paymentStatus'>): Promise<Transaction> {
+    async createTransaction(transData: Omit<Transaction, 'id'|'date'|'paymentStatus'|'completedBy'>, createdBy: string): Promise<Transaction> {
         await delay(NETWORK_DELAY);
         const transactions = storage.get<Transaction[]>('api_transactions', []);
          const newTransaction: Transaction = {
             ...transData,
             id: `#ORD${String(transactions.length + 1).padStart(3, '0')}`,
             date: new Date().toISOString().split('T')[0],
-            paymentStatus: 'completed'
+            paymentStatus: 'completed',
+            completedBy: createdBy
         };
         storage.set('api_transactions', [newTransaction, ...transactions]);
         return newTransaction;
     },
-    async confirmPayment(id: string, method: string): Promise<Transaction> {
+    async confirmPayment(id: string, method: string, completedBy: string): Promise<Transaction> {
         await delay(NETWORK_DELAY);
         let updatedTx: Transaction | undefined;
         const transactions = storage.get<Transaction[]>('api_transactions', []).map(t => {
             if (t.id === id) {
-                updatedTx = { ...t, method: method, paymentStatus: 'completed' };
+                updatedTx = { ...t, method: method, paymentStatus: 'completed', completedBy: completedBy };
                 return updatedTx;
             }
             return t;
@@ -274,7 +281,34 @@ export const api = {
         storage.set('api_transactions', transactions);
     },
     
-    // --- PERMISSIONS API ---
+    // --- SETTINGS & PERMISSIONS API ---
+    async getOperatingHours(): Promise<OperatingHours> {
+        await delay(NETWORK_DELAY);
+        return storage.get('api_operating_hours', DEFAULT_OPERATING_HOURS);
+    },
+    async updateOperatingHours(hours: OperatingHours): Promise<OperatingHours> {
+        await delay(NETWORK_DELAY);
+        storage.set('api_operating_hours', hours);
+        return hours;
+    },
+
+    async getBarberLeaves(): Promise<BarberLeave[]> {
+        await delay(NETWORK_DELAY);
+        return storage.get('api_barber_leaves', []);
+    },
+    async addBarberLeave(leave: BarberLeave): Promise<BarberLeave> {
+        await delay(NETWORK_DELAY);
+        const leaves = storage.get<BarberLeave[]>('api_barber_leaves', []);
+        storage.set('api_barber_leaves', [...leaves, leave]);
+        return leave;
+    },
+    async removeBarberLeave(barberId: number, date: string): Promise<void> {
+        await delay(NETWORK_DELAY);
+        const leaves = storage.get<BarberLeave[]>('api_barber_leaves', [])
+            .filter(l => !(l.barberId === barberId && l.date === date));
+        storage.set('api_barber_leaves', leaves);
+    },
+
     async updateUserPermissions(userId: number, permissions: Permissions): Promise<User> {
         await delay(NETWORK_DELAY);
         let updatedUser: User | undefined;

@@ -1,7 +1,8 @@
+
 import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Service, User } from '../types';
+import { Service, User, Role } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, XIcon } from '../components/icons';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
@@ -134,7 +135,11 @@ const ServicesPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
     
-    const currentUserPermissions = (context?.currentUser as User)?.permissions;
+    if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
+        return <div className="text-center p-8">Acesso não autorizado.</div>;
+    }
+    const { currentUser } = context;
+    const currentUserPermissions = currentUser.permissions;
 
     const fetchServices = useCallback(async () => {
         setIsLoading(true);
