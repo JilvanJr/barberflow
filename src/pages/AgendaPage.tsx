@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useMemo, useEffect, useRef, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
 import { Appointment, Barber, Client, Service, User, Role, OperatingHours } from '../types';
-import { PlusIcon, XIcon, CalendarIcon, SearchIcon, ChevronDownIcon } from '../components/icons';
+import { PlusIcon, XIcon, CalendarIcon, SearchIcon, ChevronDownIcon, EditIcon, TrashIcon } from '../components/icons';
 
 // Helper to get today's date in YYYY-MM-DD format based on local timezone
 const getTodayLocalISOString = () => {
@@ -16,7 +15,13 @@ const getTodayLocalISOString = () => {
 
 // Helper to convert "HH:MM" to minutes from midnight
 const timeToMinutes = (time: string): number => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) {
+        return 0;
+    }
     const [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) {
+        return 0;
+    }
     return hours * 60 + minutes;
 };
 
@@ -117,17 +122,17 @@ const CalendarPopup: React.FC<{
 const AppointmentModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (app: Omit<Appointment, 'id' | 'endTime'>) => Promise<void>;
+    onSave: (app: Partial<Appointment>) => Promise<void>;
     clients: Client[];
     services: Service[];
     barbers: Barber[];
     appointments: Appointment[];
     operatingHours: OperatingHours;
-    initialData?: Partial<Omit<Appointment, 'id' | 'endTime'>>;
+    initialData?: Partial<Appointment>;
 }> = ({ isOpen, onClose, onSave, clients, services, barbers, appointments, operatingHours, initialData }) => {
     
     const initialAppointmentState = {
-        clientId: '',
+        clientId: initialData?.clientId?.toString() || '',
         serviceId: initialData?.serviceId?.toString() || '',
         barberId: initialData?.barberId?.toString() || '',
         date: initialData?.date || getTodayLocalISOString(),
@@ -142,21 +147,36 @@ const AppointmentModal: React.FC<{
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    const isEditing = !!initialData?.id;
+
     const resetModalState = useCallback(() => {
-        const isPreFilled = initialData?.barberId && initialData?.startTime;
+        const isEditingMode = !!initialData?.id;
         setAppointmentData({
-            clientId: '',
-            serviceId: '',
+            clientId: initialData?.clientId?.toString() || '',
+            serviceId: initialData?.serviceId?.toString() || '',
             barberId: initialData?.barberId?.toString() || '',
             date: initialData?.date || getTodayLocalISOString(),
-            startTime: initialData?.startTime || ''
+            startTime: isEditingMode ? initialData?.startTime || '' : ''
         });
-        setStep(isPreFilled ? 2 : 1);
-        setClientSearch('');
+
+        if (isEditingMode && initialData?.clientId) {
+            const client = clients.find(c => c.id === initialData.clientId);
+            setClientSearch(client?.name || '');
+        } else {
+             setClientSearch('');
+        }
+
+        if (isEditingMode) {
+            setStep(4);
+        } else {
+            const isPreFilledForNew = initialData?.barberId && initialData?.startTime;
+            setStep(isPreFilledForNew ? 2 : 1);
+        }
+
         setAvailableTimes([]);
         setIsClientDropdownOpen(false);
         setIsSaving(false);
-    }, [initialData]);
+    }, [initialData, clients]);
 
     useEffect(() => {
         if (isOpen) {
@@ -187,7 +207,7 @@ const AppointmentModal: React.FC<{
         }
         
         const barberAppointments = appointments
-            .filter(app => app.barberId === Number(appointmentData.barberId) && app.date === appointmentData.date)
+            .filter(app => app.barberId === Number(appointmentData.barberId) && app.date === appointmentData.date && app.id !== initialData?.id)
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
         const newAvailableTimes: string[] = [];
@@ -230,10 +250,15 @@ const AppointmentModal: React.FC<{
             }
         }
         setAvailableTimes(newAvailableTimes);
-    }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointments, services, barbers, operatingHours]);
+    }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointments, services, barbers, operatingHours, initialData]);
     
     // Effect for managing wizard steps
     useEffect(() => {
+        if (isEditing) {
+            setStep(4);
+            return;
+        };
+
         if (!appointmentData.serviceId) {
             setStep(1);
         } else if (!appointmentData.date || !appointmentData.barberId) {
@@ -243,7 +268,7 @@ const AppointmentModal: React.FC<{
         } else {
             setStep(4);
         }
-    }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointmentData.startTime]);
+    }, [isEditing, appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointmentData.startTime]);
     
     if (!isOpen) return null;
 
@@ -251,6 +276,7 @@ const AppointmentModal: React.FC<{
         e.preventDefault();
         setIsSaving(true);
         await onSave({
+            id: initialData?.id,
             clientId: Number(appointmentData.clientId),
             serviceId: Number(appointmentData.serviceId),
             barberId: Number(appointmentData.barberId),
@@ -279,14 +305,16 @@ const AppointmentModal: React.FC<{
         4: "Passo 4 de 4: Identifique o Cliente"
     };
 
+    const isFormComplete = !!appointmentData.serviceId && !!appointmentData.barberId && !!appointmentData.date && !!appointmentData.startTime && !!appointmentData.clientId;
+
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg transform transition-all">
                 <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-2xl font-bold text-gray-800">Novo Agendamento</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">{isEditing ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">{stepHeaders[step]}</p>
+                {!isEditing && <p className="text-sm text-gray-500 mb-6">{stepHeaders[step]}</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Step 1: Service */}
@@ -349,6 +377,7 @@ const AppointmentModal: React.FC<{
                         <label className="block mb-2 text-sm font-medium text-gray-700">Cliente</label>
                          <input
                             type="text"
+                            required
                             placeholder="Digite para buscar o cliente..."
                             value={clientSearch}
                             onChange={e => {
@@ -375,7 +404,11 @@ const AppointmentModal: React.FC<{
                          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300">
                             Cancelar
                         </button>
-                        <button type="submit" disabled={!appointmentData.clientId || isSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <button
+                            type="submit"
+                            disabled={!isFormComplete || isSaving}
+                            className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
                             {isSaving ? 'Salvando...' : 'Salvar Agendamento'}
                         </button>
                     </div>
@@ -385,16 +418,18 @@ const AppointmentModal: React.FC<{
     );
 };
 
-const CancelAppointmentModal: React.FC<{
+const AppointmentDetailsModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (appointmentId: number) => void;
+    onCancel: (appointmentId: number) => void;
+    onEdit: () => void;
     appointment: Appointment | null;
     canCancel: boolean;
+    canEdit: boolean;
     clients: Client[];
     services: Service[];
     barbers: Barber[];
-}> = ({ isOpen, onClose, onConfirm, appointment, canCancel, clients, services, barbers }) => {
+}> = ({ isOpen, onClose, onCancel, onEdit, appointment, canCancel, canEdit, clients, services, barbers }) => {
     if (!isOpen || !appointment) return null;
 
     const client = clients.find(c => c.id === appointment.clientId);
@@ -408,7 +443,7 @@ const CancelAppointmentModal: React.FC<{
                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Agendamento</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                {!canCancel && <p className="text-sm bg-yellow-100 text-yellow-800 p-3 rounded-md mb-4">Você não tem permissão para cancelar agendamentos.</p>}
+                {(!canCancel && !canEdit) && <p className="text-sm bg-yellow-100 text-yellow-800 p-3 rounded-md mb-4">Você não tem permissão para editar ou excluir agendamentos.</p>}
                 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200 mb-6 text-sm text-gray-800">
                     <p><strong>Cliente:</strong> {client?.name}</p>
@@ -417,20 +452,29 @@ const CancelAppointmentModal: React.FC<{
                     <p><strong>Horário:</strong> {new Date(appointment.date + 'T00:00:00').toLocaleDateString('pt-BR')} às {appointment.startTime} - {appointment.endTime}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <button 
+                <div className="flex justify-end items-center gap-3 mt-8">
+                     <button 
                         type="button" 
                         onClick={onClose} 
-                        className="w-full px-5 py-3 text-sm font-semibold text-center text-gray-800 bg-white rounded-lg border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200"
+                        className="px-5 py-2.5 text-sm font-semibold text-center text-gray-800 bg-white rounded-lg border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200"
                     >
                         Fechar
                     </button>
                     <button 
-                        onClick={() => onConfirm(appointment.id)}
-                        disabled={!canCancel}
-                        className="w-full px-5 py-3 text-sm font-semibold text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        onClick={onEdit}
+                        disabled={!canEdit}
+                        className="px-5 py-2.5 text-sm font-semibold text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                        Cancelar Agendamento
+                        <EditIcon className="w-4 h-4" />
+                        Editar
+                    </button>
+                    <button 
+                        onClick={() => onCancel(appointment.id)}
+                        disabled={!canCancel}
+                        className="px-5 py-2.5 text-sm font-semibold text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                        Excluir
                     </button>
                 </div>
             </div>
@@ -452,7 +496,7 @@ const AgendaPage: React.FC = () => {
 
     const [initialModalData, setInitialModalData] = useState<Partial<Appointment> | undefined>();
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
@@ -495,21 +539,41 @@ const AgendaPage: React.FC = () => {
     const timeSlotHeight = 80; // in pixels for a 30-min slot
     const pixelsPerMinute = timeSlotHeight / 30;
 
-    const handleSaveAppointment = useCallback(async (newApp: Omit<Appointment, 'id' | 'endTime'>) => {
-        const savedAppointment = await api.createAppointment(newApp);
-        setAppointments(prev => [...prev, savedAppointment].sort((a,b) => a.startTime.localeCompare(b.startTime)));
+    const handleSaveAppointment = useCallback(async (appData: Partial<Appointment>) => {
+        if (appData.id) { // UPDATE
+            const updatedAppointment = await api.updateAppointment(appData.id, appData);
+            setAppointments(prev => prev.map(a => a.id === updatedAppointment.id ? updatedAppointment : a).sort((a,b) => a.startTime.localeCompare(b.startTime)));
+        } else { // CREATE
+             const createData: Omit<Appointment, 'id' | 'endTime'> = {
+                clientId: appData.clientId!,
+                serviceId: appData.serviceId!,
+                barberId: appData.barberId!,
+                date: appData.date!,
+                startTime: appData.startTime!,
+            };
+            const savedAppointment = await api.createAppointment(createData);
+            setAppointments(prev => [...prev, savedAppointment].sort((a,b) => a.startTime.localeCompare(b.startTime)));
+        }
     }, []);
 
     const handleCancelAppointment = async (appointmentId: number) => {
         await api.deleteAppointment(appointmentId);
         setAppointments(prev => prev.filter(app => app.id !== appointmentId));
-        setIsCancelModalOpen(false);
+        setIsDetailsModalOpen(false);
         setSelectedAppointment(null);
     };
 
     const handleAppointmentClick = (appointment: Appointment) => {
         setSelectedAppointment(appointment);
-        setIsCancelModalOpen(true);
+        setIsDetailsModalOpen(true);
+    };
+    
+    const handleEditClick = () => {
+        if (selectedAppointment) {
+            setInitialModalData(selectedAppointment);
+            setIsDetailsModalOpen(false);
+            setIsModalOpen(true);
+        }
     };
 
     const todaysAppointments = useMemo(() => appointments.filter(a => a.date === selectedDate), [appointments, selectedDate]);
@@ -525,7 +589,7 @@ const AgendaPage: React.FC = () => {
 
     const handleSlotClick = (barberId: number, e: React.MouseEvent<HTMLDivElement>) => {
         if (!currentUserPermissions?.canCreateAppointment) return;
-        if ((e.target as HTMLElement).closest('.appointment-card')) {
+        if ((e.target as HTMLElement).closest('.appointment-card') || (e.target as HTMLElement).closest('.unavailable-block')) {
             return;
         }
 
@@ -557,7 +621,40 @@ const AgendaPage: React.FC = () => {
         const date = new Date(dateString + 'T00:00:00');
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').replace(/ de /g, ' ');
     }
+
+    const dayOfWeek = useMemo(() => {
+        const date = new Date(selectedDate + 'T00:00:00');
+        return date.toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
+    }, [selectedDate]);
+
+    const dayOperatingHours = operatingHours ? operatingHours[dayOfWeek] : null;
     
+    const UnavailableBlock: React.FC<{ top: number; height: number; label: string }> = ({ top, height, label }) => {
+        if (height <= 10) return null;
+
+        let containerClasses = "h-full rounded-xl p-2";
+        let textClasses = "font-semibold text-sm";
+
+        if (label === 'Almoço') {
+            containerClasses += " border-2 border-dashed border-orange-400 bg-orange-50";
+            textClasses += " text-orange-600";
+        } else { // 'Fechado' or 'Ausência'
+            containerClasses += " border-2 border-dashed border-slate-500 bg-slate-400";
+            textClasses += " text-white";
+        }
+
+        return (
+            <div
+                className="absolute w-full px-1 z-0 unavailable-block"
+                style={{ top: `${top}px`, height: `${height}px` }}
+            >
+                <div className={containerClasses}>
+                    <span className={textClasses}>{label}</span>
+                </div>
+            </div>
+        );
+    };
+
     if (isLoading || !operatingHours) {
         return <div className="text-center p-8">Carregando agenda...</div>;
     }
@@ -565,7 +662,7 @@ const AgendaPage: React.FC = () => {
     return (
         <>
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-2">
+                 <div className="flex items-center space-x-2">
                     <div className="relative">
                         <button onClick={() => setIsCalendarOpen(prev => !prev)} className="flex items-center space-x-3 px-4 py-2 border border-gray-200 rounded-lg bg-white cursor-pointer shadow-sm hover:bg-gray-50">
                             <CalendarIcon className="w-5 h-5 text-gray-500"/>
@@ -583,12 +680,6 @@ const AgendaPage: React.FC = () => {
                         )}
                     </div>
                     <button onClick={() => setSelectedDate(getTodayLocalISOString())} className="px-4 py-2 border border-gray-200 rounded-lg bg-white font-semibold text-sm text-gray-700 hover:bg-gray-50 shadow-sm">Hoje</button>
-                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Todos os Profiss...</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
-                    <div className="relative"><select className="appearance-none w-40 pl-4 pr-8 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 shadow-sm"><option>Tipo de Serviço</option></select><ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/></div>
-                    <div className="relative">
-                        <input type="text" placeholder="Buscar clientes agendados" className="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm shadow-sm" />
-                        <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    </div>
                 </div>
                 {currentUserPermissions?.canCreateAppointment && (
                     <button onClick={handleOpenModal} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
@@ -628,7 +719,10 @@ const AgendaPage: React.FC = () => {
                             </div>
                             
                             {/* Barber columns with appointments */}
-                            {barbers.map((barber, index) => (
+                            {barbers.map((barber, index) => {
+                                const isShopOpen = dayOperatingHours?.isOpen ?? false;
+    
+                                return (
                                 <div 
                                     key={barber.id}
                                     className={`relative ${index > 0 ? 'border-l border-gray-100' : ''}`}
@@ -636,31 +730,51 @@ const AgendaPage: React.FC = () => {
                                 >
                                     {/* Unavailable slots renderer */}
                                     <div className="absolute inset-0">
-                                        {/* Lunch Break */}
-                                        {barber.lunchStartTime && barber.lunchEndTime && (
+                                        {!isShopOpen || !dayOperatingHours ? (
                                             <div 
-                                                className="absolute w-full bg-orange-100 border-y border-dashed border-orange-300 z-0"
-                                                style={{
-                                                    top: timeToPosition(barber.lunchStartTime),
-                                                    height: getAppointmentDuration(barber.lunchStartTime, barber.lunchEndTime) * pixelsPerMinute,
-                                                }}
-                                            ><span className="text-xs text-orange-600 font-semibold absolute top-1 left-2">Almoço</span></div>
+                                                className="absolute inset-0 bg-slate-50 bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,theme(colors.slate.200)_4px,theme(colors.slate.200)_5px)] z-0 flex items-center justify-center p-2"
+                                            >
+                                                <span className="font-bold text-slate-400 transform -rotate-12 bg-slate-50/70 px-4 py-2 rounded-md shadow-sm">Barbearia Fechada</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* Before Shop opens */}
+                                                <UnavailableBlock 
+                                                    top={timeToPosition('09:00')}
+                                                    height={timeToPosition(dayOperatingHours.openTime) - timeToPosition('09:00')}
+                                                    label="Fechado"
+                                                />
+                                                {/* Barber absent before work */}
+                                                <UnavailableBlock 
+                                                    top={timeToPosition(dayOperatingHours.openTime)}
+                                                    height={timeToPosition(barber.workStartTime || dayOperatingHours.openTime) - timeToPosition(dayOperatingHours.openTime)}
+                                                    label="Ausência"
+                                                />
+
+                                                {/* Lunch Break */}
+                                                {barber.lunchStartTime && barber.lunchEndTime && (
+                                                    <UnavailableBlock 
+                                                        top={timeToPosition(barber.lunchStartTime)}
+                                                        height={getAppointmentDuration(barber.lunchStartTime, barber.lunchEndTime) * pixelsPerMinute}
+                                                        label="Almoço"
+                                                    />
+                                                )}
+                                                
+                                                {/* Barber absent after work */}
+                                                <UnavailableBlock
+                                                    top={timeToPosition(barber.workEndTime || dayOperatingHours.closeTime)}
+                                                    height={timeToPosition(dayOperatingHours.closeTime) - timeToPosition(barber.workEndTime || dayOperatingHours.closeTime)}
+                                                    label="Ausência"
+                                                />
+
+                                                {/* After Shop closes */}
+                                                <UnavailableBlock
+                                                    top={timeToPosition(dayOperatingHours.closeTime)}
+                                                    height={timeToPosition('19:30') - timeToPosition(dayOperatingHours.closeTime)}
+                                                    label="Fechado"
+                                                />
+                                            </>
                                         )}
-                                        {/* Off Work */}
-                                        <div 
-                                            className="absolute w-full bg-gray-100 z-0"
-                                            style={{
-                                                top: 0,
-                                                height: timeToPosition(barber.workStartTime || '09:00'),
-                                            }}
-                                        />
-                                        <div 
-                                            className="absolute w-full bg-gray-100 z-0"
-                                            style={{
-                                                top: timeToPosition(barber.workEndTime || '19:30'),
-                                                bottom: 0,
-                                            }}
-                                        />
                                     </div>
                                     {/* Appointments */}
                                     {todaysAppointments.filter(a => a.barberId === barber.id).map(app => {
@@ -668,6 +782,7 @@ const AgendaPage: React.FC = () => {
                                         const service = services.find(s => s.id === app.serviceId);
                                         const top = timeToPosition(app.startTime);
                                         const height = getAppointmentDuration(app.startTime, app.endTime) * pixelsPerMinute;
+                                        const tooltipText = `${client?.name} - ${service?.name} - ${app.startTime} ~ ${app.endTime}`;
                                         return (
                                             <div 
                                                 key={app.id} 
@@ -676,6 +791,7 @@ const AgendaPage: React.FC = () => {
                                             >
                                                <div 
                                                     onClick={() => handleAppointmentClick(app)}
+                                                    title={tooltipText}
                                                     className="bg-blue-100 border border-blue-300 rounded-lg p-2 h-full overflow-hidden cursor-pointer shadow-sm hover:bg-blue-200 transition-colors"
                                                 >
                                                     <p className="font-bold text-blue-800 truncate">{client?.name}</p>
@@ -686,7 +802,7 @@ const AgendaPage: React.FC = () => {
                                         )
                                     })}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 </div>
@@ -704,12 +820,14 @@ const AgendaPage: React.FC = () => {
                     initialData={initialModalData}
                 />
             )}
-             <CancelAppointmentModal
-                isOpen={isCancelModalOpen}
-                onClose={() => setIsCancelModalOpen(false)}
-                onConfirm={handleCancelAppointment}
+             <AppointmentDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                onCancel={handleCancelAppointment}
+                onEdit={handleEditClick}
                 appointment={selectedAppointment}
                 canCancel={!!currentUserPermissions?.canCancelAppointment}
+                canEdit={!!currentUserPermissions?.canCreateAppointment}
                 clients={clients}
                 services={services}
                 barbers={barbers}

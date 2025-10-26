@@ -97,6 +97,31 @@ export const api = {
         throw new Error("User not found for token");
     },
 
+    async checkUserExists(email: string): Promise<boolean> {
+        await delay(NETWORK_DELAY);
+        const users = storage.get<User[]>('api_users', []);
+        return users.some(u => u.email === email);
+    },
+    
+    async setUserPassword(email: string, password: string): Promise<User> {
+        await delay(NETWORK_DELAY);
+        let updatedUser: User | undefined;
+        const users = storage.get<User[]>('api_users', []).map(u => {
+            if (u.email === email) {
+                updatedUser = { ...u, password };
+                return updatedUser;
+            }
+            return u;
+        });
+
+        if (!updatedUser) {
+            throw new Error("User not found during password update");
+        }
+        
+        storage.set('api_users', users);
+        return updatedUser;
+    },
+
     // --- CLIENTS API ---
     async getClients(): Promise<Client[]> {
         await delay(NETWORK_DELAY);
@@ -205,6 +230,42 @@ export const api = {
         const appointments = storage.get<Appointment[]>('api_appointments', []);
         storage.set('api_appointments', [...appointments, newAppointment]);
         return newAppointment;
+    },
+    async updateAppointment(id: number, updatedData: Partial<Appointment>): Promise<Appointment> {
+        await delay(NETWORK_DELAY);
+        const appointments = storage.get<Appointment[]>('api_appointments', []);
+        const services = storage.get<Service[]>('api_services', []);
+        let finalUpdatedAppointment: Appointment | undefined;
+
+        const newAppointments = appointments.map(app => {
+            if (app.id === id) {
+                const mergedData = { ...app, ...updatedData };
+
+                const service = services.find(s => s.id === mergedData.serviceId);
+                if (!service) throw new Error("Service not found for update");
+                
+                const startTime = new Date(`${mergedData.date}T${mergedData.startTime}`);
+                const endTime = new Date(startTime.getTime() + service.duration * 60000);
+                const endTimeString = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
+
+                finalUpdatedAppointment = {
+                    ...mergedData,
+                    endTime: endTimeString,
+                    clientId: Number(mergedData.clientId),
+                    serviceId: Number(mergedData.serviceId),
+                    barberId: Number(mergedData.barberId),
+                } as Appointment;
+                return finalUpdatedAppointment;
+            }
+            return app;
+        });
+
+        if (!finalUpdatedAppointment) {
+            throw new Error("Appointment to update not found");
+        }
+
+        storage.set('api_appointments', newAppointments);
+        return finalUpdatedAppointment;
     },
     async deleteAppointment(id: number): Promise<void> {
         await delay(NETWORK_DELAY);
