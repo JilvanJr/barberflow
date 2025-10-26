@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
 import { Client, Role, User } from '../types';
-import { SearchIcon, PlusIcon, EditIcon, TrashIcon, XIcon } from '../components/icons';
+import { SearchIcon, PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon } from '../components/icons';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
     if (!message) return null;
@@ -158,6 +158,42 @@ const ClientModal: React.FC<{
     );
 };
 
+const ConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <AlertTriangleIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
+                <p className="text-gray-600 my-4">{message}</p>
+                <div className="flex justify-center space-x-4">
+                    <button 
+                        type="button" 
+                        onClick={onClose} 
+                        className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        Cancelar
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={onConfirm} 
+                        className="px-6 py-2.5 w-full bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Sim, Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ClientsPage: React.FC = () => {
     const context = useContext(AppContext);
     const [clients, setClients] = useState<Client[]>([]);
@@ -165,6 +201,8 @@ const ClientsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<Partial<Client> | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [clientToDeleteId, setClientToDeleteId] = useState<number | null>(null);
 
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
@@ -205,14 +243,22 @@ const ClientsPage: React.FC = () => {
         setIsModalOpen(true);
     };
     
-    const handleDelete = async (clientId: number) => {
-        if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
+    const handleDelete = (clientId: number) => {
+        setClientToDeleteId(clientId);
+        setIsConfirmModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (clientToDeleteId) {
             try {
-                await api.deleteClient(clientId);
-                setClients(prevClients => prevClients.filter(c => c.id !== clientId));
+                await api.deleteClient(clientToDeleteId);
+                setClients(prevClients => prevClients.filter(c => c.id !== clientToDeleteId));
             } catch (error) {
                 console.error("Failed to delete client", error);
                 alert('Falha ao excluir o cliente.');
+            } finally {
+                setIsConfirmModalOpen(false);
+                setClientToDeleteId(null);
             }
         }
     };
@@ -293,6 +339,14 @@ const ClientsPage: React.FC = () => {
             {(currentUserPermissions?.canCreateClient || currentUserPermissions?.canEditClient) && (
                 <ClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} client={editingClient} />
             )}
+
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Confirmar Exclusão"
+                message="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+            />
         </div>
     );
 };

@@ -1,8 +1,6 @@
-... (todo o conteúdo anterior do README) ...
-
 ---
 
-## Parte 3: Regras de Desenvolvimento
+## Regras de Desenvolvimento
 
 Esta seção contém as regras e padrões a serem seguidos durante o desenvolvimento para manter a consistência do código.
 

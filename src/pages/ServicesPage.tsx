@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
 import { Service, User, Role } from '../types';
-import { PlusIcon, EditIcon, TrashIcon, XIcon } from '../components/icons';
+import { PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon } from '../components/icons';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
     if (!message) return null;
@@ -127,6 +127,41 @@ const ServiceModal: React.FC<{
     );
 };
 
+const ConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <AlertTriangleIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
+                <p className="text-gray-600 my-4">{message}</p>
+                <div className="flex justify-center space-x-4">
+                    <button 
+                        type="button" 
+                        onClick={onClose} 
+                        className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        Cancelar
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={onConfirm} 
+                        className="px-6 py-2.5 w-full bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Sim, Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ServicesPage: React.FC = () => {
     const context = useContext(AppContext);
@@ -134,6 +169,8 @@ const ServicesPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [serviceToDeleteId, setServiceToDeleteId] = useState<number | null>(null);
     
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
@@ -167,14 +204,22 @@ const ServicesPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (serviceId: number) => {
-        if(window.confirm('Tem certeza que deseja excluir este serviço?')) {
+    const handleDelete = (serviceId: number) => {
+        setServiceToDeleteId(serviceId);
+        setIsConfirmModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (serviceToDeleteId) {
             try {
-                await api.deleteService(serviceId);
-                setServices(prevServices => prevServices.filter(s => s.id !== serviceId));
+                await api.deleteService(serviceToDeleteId);
+                setServices(prevServices => prevServices.filter(s => s.id !== serviceToDeleteId));
             } catch (error) {
                 console.error("Failed to delete service", error);
                 alert("Falha ao excluir o serviço.");
+            } finally {
+                setIsConfirmModalOpen(false);
+                setServiceToDeleteId(null);
             }
         }
     };
@@ -242,6 +287,13 @@ const ServicesPage: React.FC = () => {
              {(currentUserPermissions?.canCreateService || currentUserPermissions?.canEditService) && (
                 <ServiceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} service={editingService} />
              )}
+             <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Confirmar Exclusão"
+                message="Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
+            />
         </div>
     );
 };
