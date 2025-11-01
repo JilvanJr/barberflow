@@ -1,9 +1,9 @@
 
-import React, { useState, useCallback, useEffect, useContext } from 'react';
+import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
 import { Service, User, Role } from '../types';
-import { PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon } from '../components/icons';
+import { PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
     if (!message) return null;
@@ -171,6 +171,7 @@ const ServicesPage: React.FC = () => {
     const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [serviceToDeleteId, setServiceToDeleteId] = useState<number | null>(null);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Service | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
     
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
@@ -193,6 +194,28 @@ const ServicesPage: React.FC = () => {
     useEffect(() => {
         fetchServices();
     }, [fetchServices]);
+
+    const requestSort = (key: keyof Service) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedServices = useMemo(() => {
+        let sortableServices = [...services];
+        if (sortConfig.key) {
+            sortableServices.sort((a, b) => {
+                const aValue = a[sortConfig.key!];
+                const bValue = b[sortConfig.key!];
+                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableServices;
+    }, [services, sortConfig]);
 
     const handleAddNew = () => {
         setEditingService({ name: '', price: undefined, duration: undefined });
@@ -238,6 +261,22 @@ const ServicesPage: React.FC = () => {
             alert("Falha ao salvar o serviço.");
         }
     }, [fetchServices]);
+
+    const SortableHeader: React.FC<{ columnKey: keyof Service; title: string; }> = ({ columnKey, title }) => {
+        const isSorted = sortConfig.key === columnKey;
+        const icon = isSorted 
+            ? (sortConfig.direction === 'ascending' ? <ArrowUpIcon className="w-4 h-4 ml-1 text-gray-800" /> : <ArrowDownIcon className="w-4 h-4 ml-1 text-gray-800" />) 
+            : <div className="w-4 h-4 ml-1" />;
+        
+        return (
+             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <button onClick={() => requestSort(columnKey)} className="flex items-center group">
+                    <span className="group-hover:text-gray-900">{title}</span>
+                    {icon}
+                </button>
+            </th>
+        );
+    };
     
     if (isLoading) {
         return <div className="text-center p-8">Carregando serviços...</div>;
@@ -259,16 +298,16 @@ const ServicesPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome do Serviço</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duração</th>
+                            <SortableHeader columnKey="name" title="Nome do Serviço" />
+                            <SortableHeader columnKey="price" title="Preço" />
+                            <SortableHeader columnKey="duration" title="Duração" />
                             {(currentUserPermissions?.canEditService || currentUserPermissions?.canDeleteService) && (
                                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
                             )}
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {services.map(service => (
+                        {sortedServices.map(service => (
                            <tr key={service.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R$ {Number(service.price).toFixed(2).replace('.', ',')}</td>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { User, Client } from '../types';
 import { api } from '../api';
@@ -46,6 +47,8 @@ const LoginForm: React.FC<{ onLogin: AuthPageProps['onLogin']; onSwitchToFirstAc
         } catch (err: any) {
             if (err.message === 'Invalid credentials') {
                 setError('E-mail ou senha inválidos. Por favor, tente novamente.');
+            } else if (err.message === "Your account is inactive. Please contact the barbershop.") {
+                setError("Sua conta está inativa. Por favor, entre em contato com a barbearia.");
             } else {
                 setError('Ocorreu um erro inesperado. Tente mais tarde.');
             }

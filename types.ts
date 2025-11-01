@@ -52,6 +52,7 @@ export interface Client {
   cpf: string;
   password?: string;
   role: Role.CLIENT;
+  status: 'active' | 'inactive';
 }
 
 export interface Service {

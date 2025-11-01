@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -294,8 +295,8 @@ const AppointmentModal: React.FC<{
     }
     
     const filteredClients = (clientSearch
-        ? clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
-        : [...clients]
+        ? clients.filter(c => c.status === 'active' && c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+        : clients.filter(c => c.status === 'active')
     ).sort((a, b) => a.name.localeCompare(b.name));
     
     const stepHeaders: { [key: number]: string } = {

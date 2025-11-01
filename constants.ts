@@ -106,15 +106,15 @@ export const BARBERS: Barber[] = [
 ];
 
 export const CLIENTS: Client[] = [
-  { id: 1, name: 'Manuel Neuer', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'client@barberflow.com', cpf: '111.111.111-11', password: 'client', role: Role.CLIENT },
-  { id: 2, name: 'Lionel Messi', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'messi@email.com', cpf: '222.222.222-22', role: Role.CLIENT },
-  { id: 3, name: 'Harry Kane', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'kane@email.com', cpf: '333.333.333-33', role: Role.CLIENT },
-  { id: 4, name: 'Roberto Carlos', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'roberto@email.com', cpf: '444.444.444-44', role: Role.CLIENT },
-  { id: 5, name: 'Renato Torres', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'renato@email.com', cpf: '555.555.555-55', role: Role.CLIENT },
-  { id: 6, name: 'Yago Oproprio', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'yago@email.com', cpf: '666.666.666-66', role: Role.CLIENT },
-  { id: 7, name: 'Luccas Carlos', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'luccas@email.com', cpf: '777.777.777-77', role: Role.CLIENT },
-  { id: 8, name: 'Filipe Ret', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'filipe@email.com', cpf: '888.888.888-88', role: Role.CLIENT },
-  { id: 9, name: 'Teto', birthDate: '01/01/2000', phone: '(11) 9 1234-5678', email: 'teto@email.com', cpf: '999.999.999-99', role: Role.CLIENT },
+  { id: 1, name: 'Manuel Neuer', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'client@barberflow.com', cpf: '111.111.111-11', password: 'client', role: Role.CLIENT, status: 'active' },
+  { id: 2, name: 'Lionel Messi', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'messi@email.com', cpf: '222.222.222-22', role: Role.CLIENT, status: 'active' },
+  { id: 3, name: 'Harry Kane', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'kane@email.com', cpf: '333.333.333-33', role: Role.CLIENT, status: 'active' },
+  { id: 4, name: 'Roberto Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'roberto@email.com', cpf: '444.444.444-44', role: Role.CLIENT, status: 'inactive' },
+  { id: 5, name: 'Renato Torres', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'renato@email.com', cpf: '555.555.555-55', role: Role.CLIENT, status: 'active' },
+  { id: 6, name: 'Yago Oproprio', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'yago@email.com', cpf: '666.666.666-66', role: Role.CLIENT, status: 'active' },
+  { id: 7, name: 'Luccas Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'luccas@email.com', cpf: '777.777.777-77', role: Role.CLIENT, status: 'active' },
+  { id: 8, name: 'Filipe Ret', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'filipe@email.com', cpf: '888.888.888-88', role: Role.CLIENT, status: 'inactive' },
+  { id: 9, name: 'Teto', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'teto@email.com', cpf: '999.999.999-99', role: Role.CLIENT, status: 'active' },
 ];
 
 export const SERVICES: Service[] = [

@@ -1,3 +1,4 @@
+
 /**
  * Mock API Layer
  * 
@@ -65,6 +66,9 @@ export const api = {
         const foundUser = allUsers.find(u => u.email === email && u.password === password);
 
         if (foundUser) {
+            if (foundUser.role === Role.CLIENT && (foundUser as Client).status === 'inactive') {
+                throw new Error("Your account is inactive. Please contact the barbershop.");
+            }
             const token = createFakeToken(foundUser);
             return { user: { ...foundUser }, token };
         }
@@ -133,7 +137,7 @@ export const api = {
         const newClient: Client = {
             id: Date.now(),
             name: clientData.name || '', email: clientData.email || '', phone: clientData.phone || '',
-            cpf: clientData.cpf || '', birthDate: clientData.birthDate || '', role: Role.CLIENT,
+            cpf: clientData.cpf || '', birthDate: clientData.birthDate || '', role: Role.CLIENT, status: 'active',
         };
         storage.set('api_clients', [...clients, newClient]);
         return newClient;
@@ -144,10 +148,21 @@ export const api = {
         storage.set('api_clients', clients);
         return updatedData;
     },
-    async deleteClient(id: number): Promise<void> {
+    async toggleClientStatus(id: number, status: 'active' | 'inactive'): Promise<Client> {
         await delay(NETWORK_DELAY);
-        const clients = storage.get<Client[]>('api_clients', []).filter(c => c.id !== id);
+        let updatedClient: Client | undefined;
+        const clients = storage.get<Client[]>('api_clients', []).map(c => {
+            if (c.id === id) {
+                updatedClient = { ...c, status };
+                return updatedClient;
+            }
+            return c;
+        });
+        if (!updatedClient) {
+            throw new Error("Client not found to toggle status");
+        }
         storage.set('api_clients', clients);
+        return updatedClient;
     },
 
     // --- SERVICES API ---

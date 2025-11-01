@@ -1,9 +1,11 @@
 
-import React, { useState, useCallback, useEffect, useContext } from 'react';
+import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Client, Role, User } from '../types';
-import { SearchIcon, PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon } from '../components/icons';
+import { Client, Role } from '../types';
+import { SearchIcon, PlusIcon, EditIcon, XIcon, AlertTriangleIcon, UsersIcon, UserCheckIcon, UserXIcon, EyeIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
     if (!message) return null;
@@ -17,6 +19,7 @@ const FormError: React.FC<{ message?: string }> = ({ message }) => {
     );
 };
 
+// Modal para CRIAR um novo cliente
 const ClientModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -46,11 +49,6 @@ const ClientModal: React.FC<{
                 if (!phoneDigits) return 'O telefone é obrigatório.';
                 if (phoneDigits.length < 10) return 'O telefone deve ter no mínimo 10 dígitos.';
                 return '';
-            case 'birthDate':
-                if (value && value.length > 0 && value.length < 10) {
-                    return 'Complete a data no formato DD/MM/AAAA.';
-                }
-                return '';
             default:
                 return '';
         }
@@ -58,7 +56,6 @@ const ClientModal: React.FC<{
 
     const handleInputChange = (field: keyof Client, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        // Re-validate the field as the user types, if it had an error
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
         }
@@ -73,47 +70,34 @@ const ClientModal: React.FC<{
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const validationErrors: Record<string, string> = {};
-        (Object.keys(formData) as Array<keyof Client>).forEach(key => {
-            const error = validateField(key, formData[key]);
-            if (error) {
-                validationErrors[key] = error;
-            }
-        });
-        
-        // Also validate required fields that might be missing from formData initially
-        if (!formData.name) validationErrors.name = validateField('name', formData.name);
-        if (!formData.email) validationErrors.email = validateField('email', formData.email);
-        if (!formData.phone) validationErrors.phone = validateField('phone', formData.phone);
+        const requiredFields: (keyof Client)[] = ['name', 'email', 'phone'];
 
+        requiredFields.forEach(key => {
+            const error = validateField(key, formData[key]);
+            if (error) validationErrors[key] = error;
+        });
 
         setErrors(validationErrors);
-        if (Object.values(validationErrors).every(v => !v)) {
+        if (Object.keys(validationErrors).length === 0) {
             onSave(formData as Client);
         }
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 11) value = value.substring(0, 11);
+        value = value.substring(0, 11);
         
-        let formattedValue = value;
-        if (value.length > 0) formattedValue = `(${value.substring(0, 2)}`;
-        if (value.length >= 3) formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}`;
-        if (value.length >= 8) formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
-
+        let formattedValue;
+        if (value.length <= 2) {
+            formattedValue = `(${value}`;
+        } else if (value.length <= 7) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+        } else {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+        }
+    
         handleInputChange('phone', formattedValue);
     };
-
-    const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 8) value = value.substring(0, 8);
-
-        let formattedValue = value;
-        if (value.length > 2) formattedValue = `${value.substring(0, 2)}/${value.substring(2)}`;
-        if (value.length > 4) formattedValue = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
-        
-        handleInputChange('birthDate', formattedValue);
-    }
 
     if (!isOpen) return null;
 
@@ -124,7 +108,7 @@ const ClientModal: React.FC<{
         <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">{client?.id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">Novo Cliente</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -140,13 +124,8 @@ const ClientModal: React.FC<{
                     </div>
                      <div>
                         <label className={labelClasses}>Telefone</label>
-                        <input type="tel" name="phone" placeholder="(11) 9 1234-5678" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} />
+                        <input type="tel" name="phone" placeholder="(11) 91234-5678" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} />
                         <FormError message={errors.phone} />
-                    </div>
-                     <div>
-                        <label className={labelClasses}>Data de Nascimento (Opcional)</label>
-                        <input type="text" name="birthDate" placeholder="DD/MM/AAAA" value={formData.birthDate || ''} onChange={handleBirthDateChange} onBlur={handleBlur} className={inputClasses} maxLength={10} />
-                        <FormError message={errors.birthDate} />
                     </div>
                     <div className="flex justify-end space-x-4 pt-4">
                         <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
@@ -158,51 +137,234 @@ const ClientModal: React.FC<{
     );
 };
 
-const ConfirmationModal: React.FC<{
+// Modal para VER e EDITAR um cliente
+const ClientDetailsModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-    message: string;
-}> = ({ isOpen, onClose, onConfirm, title, message }) => {
-    if (!isOpen) return null;
+    onSave: (client: Client) => void;
+    onToggleStatus: (client: Client) => void;
+    client: Client | null;
+}> = ({ isOpen, onClose, onSave, onToggleStatus, client }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState<Partial<Client>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (client) {
+            setFormData(client);
+            setIsEditing(false);
+            setErrors({});
+        }
+    }, [client]);
+
+    const validateField = (name: keyof Client, value: any): string => {
+        switch (name) {
+            case 'name':
+                return !value?.trim() ? 'O nome é obrigatório.' : '';
+            case 'email':
+                if (!value) return 'O e-mail é obrigatório.';
+                if (!/\S+@\S+\.\S+/.test(value)) return 'Formato de e-mail inválido.';
+                return '';
+            case 'phone':
+                const phoneDigits = value?.replace(/\D/g, '') || '';
+                if (!phoneDigits) return 'O telefone é obrigatório.';
+                if (phoneDigits.length < 10) return 'O telefone deve ter no mínimo 10 dígitos.';
+                return '';
+            default:
+                return '';
+        }
+    };
+    
+    const handleInputChange = (field: keyof Client, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
+        }
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const fieldName = name as keyof Client;
+        setErrors(prev => ({ ...prev, [fieldName]: validateField(fieldName, value) }));
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.substring(0, 11);
+        
+        let formattedValue;
+        if (value.length <= 2) {
+            formattedValue = `(${value}`;
+        } else if (value.length <= 7) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+        } else {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+        }
+    
+        handleInputChange('phone', formattedValue);
+    };
+
+    const handleSave = () => {
+        const validationErrors: Record<string, string> = {};
+        const requiredFields: (keyof Client)[] = ['name', 'email', 'phone'];
+        requiredFields.forEach(key => {
+            const error = validateField(key, formData[key]);
+            if (error) validationErrors[key] = error;
+        });
+
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length === 0) {
+            onSave(formData as Client);
+            setIsEditing(false);
+        }
+    };
+    
+    const handleCancel = () => {
+        setIsEditing(false);
+        if (client) setFormData(client);
+        setErrors({});
+    };
+
+    if (!isOpen || !client) return null;
+
+    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-200 disabled:text-gray-500";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                    <AlertTriangleIcon className="h-6 w-6 text-red-600" />
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Detalhes do Cliente</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
-                <div className="flex justify-center space-x-4">
-                    <button 
-                        type="button" 
-                        onClick={onClose} 
-                        className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
-                        Cancelar
+                <div className="space-y-4">
+                    <div>
+                        <label className={labelClasses}>Nome</label>
+                        <input type="text" name="name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.name} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Email</label>
+                        <input type="email" name="email" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.email} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Telefone</label>
+                        <input type="tel" name="phone" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} disabled={!isEditing} />
+                        <FormError message={errors.phone} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Situação</label>
+                        <span className={`px-2.5 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </span>
+                    </div>
+                </div>
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                    <button onClick={() => onToggleStatus(client)} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${client.status === 'active' ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'}`}>
+                        {client.status === 'active' ? 'Inativar Cliente' : 'Ativar Cliente'}
                     </button>
-                    <button 
-                        type="button" 
-                        onClick={onConfirm} 
-                        className="px-6 py-2.5 w-full bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
-                        Sim, Excluir
-                    </button>
+                    <div className="flex space-x-3">
+                        {isEditing ? (
+                            <>
+                                <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
+                                <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar</button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
+                                <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
+
+const ConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+    confirmText: string;
+    isDestructive: boolean;
+}> = ({ isOpen, onClose, onConfirm, title, message, confirmText, isDestructive }) => {
+    if (!isOpen) return null;
+
+    const confirmButtonClasses = isDestructive
+        ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500";
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
+                <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${isDestructive ? 'bg-red-100' : 'bg-blue-100'}`}>
+                    <AlertTriangleIcon className={`h-6 w-6 ${isDestructive ? 'text-red-600' : 'text-blue-600'}`} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
+                <p className="text-gray-600 my-4">{message}</p>
+                <div className="flex justify-center space-x-4">
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-full text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const StatCard: React.FC<{ icon: React.FC<any>, title: string, value: number, color: 'blue' | 'green' | 'gray' }> = ({ icon: Icon, title, value, color }) => {
+    const colorClasses = {
+        blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+        green: { bg: 'bg-green-100', text: 'text-green-800' },
+        gray: { bg: 'bg-gray-100', text: 'text-gray-800' }
+    };
+    const selectedColor = colorClasses[color];
+
+    return (
+        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-4">
+            <div className={`p-3 rounded-full ${selectedColor.bg}`}>
+                <Icon className={`w-6 h-6 ${selectedColor.text}`} />
+            </div>
+            <div>
+                <p className="text-sm font-medium text-gray-500">{title}</p>
+                <p className="text-2xl font-bold text-gray-900">{value}</p>
+            </div>
+        </div>
+    );
+};
+
+const FilterButton: React.FC<{
+    filter: StatusFilter;
+    label: string;
+    currentFilter: StatusFilter;
+    onClick: (filter: StatusFilter) => void;
+}> = ({ filter, label, currentFilter, onClick }) => (
+    <button
+        onClick={() => onClick(filter)}
+        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${currentFilter === filter ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border'}`}
+    >
+        {label}
+    </button>
+);
+
 const ClientsPage: React.FC = () => {
     const context = useContext(AppContext);
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingClient, setEditingClient] = useState<Partial<Client> | null>(null);
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Client | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
+    
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    const [clientToDeleteId, setClientToDeleteId] = useState<number | null>(null);
+    const [clientToToggle, setClientToToggle] = useState<Client | null>(null);
 
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
@@ -226,39 +388,68 @@ const ClientsPage: React.FC = () => {
         fetchClients();
     }, [fetchClients]);
 
-    const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const requestSort = (key: keyof Client) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const filteredClients = useMemo(() => {
+        let sortableClients = clients
+            .filter(client => {
+                if (statusFilter === 'all') return true;
+                return client.status === statusFilter;
+            })
+            .filter(client =>
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+        if (sortConfig.key) {
+            sortableClients.sort((a, b) => {
+                const aValue = a[sortConfig.key!];
+                const bValue = b[sortConfig.key!];
+                if (aValue === null || aValue === undefined) return 1;
+                if (bValue === null || bValue === undefined) return -1;
+                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            });
+        }
+    
+        return sortableClients;
+    }, [clients, searchTerm, statusFilter, sortConfig]);
+
 
     const handleAddNew = () => {
-        setEditingClient({
-            name: '', email: '', phone: '', cpf: '', birthDate: '', role: Role.CLIENT
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (client: Client) => {
-        setEditingClient(client);
-        setIsModalOpen(true);
+        setIsCreateModalOpen(true);
     };
     
-    const handleDelete = (clientId: number) => {
-        setClientToDeleteId(clientId);
+    const handleViewDetails = (client: Client) => {
+        setSelectedClient(client);
+        setIsDetailsModalOpen(true);
+    };
+
+    const handleToggleStatus = (client: Client) => {
+        setClientToToggle(client);
         setIsConfirmModalOpen(true);
     };
 
-    const confirmDelete = async () => {
-        if (clientToDeleteId) {
+    const confirmToggleStatus = async () => {
+        if (clientToToggle) {
             try {
-                await api.deleteClient(clientToDeleteId);
-                setClients(prevClients => prevClients.filter(c => c.id !== clientToDeleteId));
+                const newStatus = clientToToggle.status === 'active' ? 'inactive' : 'active';
+                await api.toggleClientStatus(clientToToggle.id, newStatus);
+                fetchClients();
             } catch (error) {
-                console.error("Failed to delete client", error);
-                alert('Falha ao excluir o cliente.');
+                console.error("Failed to toggle client status", error);
+                alert('Falha ao atualizar o status do cliente.');
             } finally {
                 setIsConfirmModalOpen(false);
-                setClientToDeleteId(null);
+                setClientToToggle(null);
+                setIsDetailsModalOpen(false); // Close details modal after action
             }
         }
     };
@@ -270,13 +461,33 @@ const ClientsPage: React.FC = () => {
             } else {
                 await api.createClient(clientToSave);
             }
-            setIsModalOpen(false);
-            fetchClients(); // Refetch to get the latest data
+            setIsCreateModalOpen(false);
+            setIsDetailsModalOpen(false);
+            fetchClients();
         } catch (error) {
             console.error("Failed to save client", error);
             alert('Falha ao salvar o cliente.');
         }
     }, [fetchClients]);
+    
+    const activeClients = useMemo(() => clients.filter(c => c.status === 'active').length, [clients]);
+    const inactiveClients = useMemo(() => clients.filter(c => c.status === 'inactive').length, [clients]);
+
+    const SortableHeader: React.FC<{ columnKey: keyof Client; title: string; }> = ({ columnKey, title }) => {
+        const isSorted = sortConfig.key === columnKey;
+        const icon = isSorted 
+            ? (sortConfig.direction === 'ascending' ? <ArrowUpIcon className="w-4 h-4 ml-1 text-gray-800" /> : <ArrowDownIcon className="w-4 h-4 ml-1 text-gray-800" />) 
+            : <div className="w-4 h-4 ml-1" />;
+        
+        return (
+             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <button onClick={() => requestSort(columnKey)} className="flex items-center group">
+                    <span className="group-hover:text-gray-900">{title}</span>
+                    {icon}
+                </button>
+            </th>
+        );
+    };
 
     if (isLoading) {
         return <div className="text-center p-8">Carregando clientes...</div>;
@@ -284,8 +495,23 @@ const ClientsPage: React.FC = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Clientes</h2>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Gestão de Clientes</h1>
+                <p className="text-sm text-gray-500">Adicione, edite e gerencie as informações dos seus clientes.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <StatCard icon={UsersIcon} title="Total de Clientes" value={clients.length} color="blue" />
+                <StatCard icon={UserCheckIcon} title="Clientes Ativos" value={activeClients} color="green" />
+                <StatCard icon={UserXIcon} title="Clientes Inativos" value={inactiveClients} color="gray" />
+            </div>
+
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-2">
+                    <FilterButton filter="all" label="Todos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="active" label="Ativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="inactive" label="Inativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                </div>
                 <div className="flex items-center space-x-4">
                     <div className="relative">
                         <input
@@ -310,42 +536,59 @@ const ClientsPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
-                            {(currentUserPermissions?.canEditClient || currentUserPermissions?.canDeleteClient) && (
-                                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
-                            )}
+                            <SortableHeader columnKey="name" title="Nome" />
+                            <SortableHeader columnKey="phone" title="Contato" />
+                            <SortableHeader columnKey="status" title="Status" />
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {filteredClients.map(client => (
                             <tr key={client.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.phone}</td>
-                                {(currentUserPermissions?.canEditClient || currentUserPermissions?.canDeleteClient) && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        {currentUserPermissions?.canEditClient && <button onClick={() => handleEdit(client)} className="text-blue-600 hover:text-blue-900"><EditIcon className="w-5 h-5"/></button>}
-                                        {currentUserPermissions?.canDeleteClient && <button onClick={() => handleDelete(client.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>}
-                                    </td>
-                                )}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {client.phone}
+                                </td>
+                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button onClick={() => handleViewDetails(client)} className="text-gray-500 hover:text-blue-600" title="Ver Detalhes">
+                                        <EyeIcon className="w-5 h-5"/>
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
             
-            {(currentUserPermissions?.canCreateClient || currentUserPermissions?.canEditClient) && (
-                <ClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} client={editingClient} />
+            {currentUserPermissions?.canCreateClient && (
+                <ClientModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} client={{ name: '', email: '', phone: '', status: 'active' }} />
             )}
+            
+            <ClientDetailsModal 
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                client={selectedClient}
+                onSave={handleSave}
+                onToggleStatus={handleToggleStatus}
+            />
 
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={confirmDelete}
-                title="Confirmar Exclusão"
-                message="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+                onConfirm={confirmToggleStatus}
+                title={clientToToggle?.status === 'active' ? "Inativar Cliente" : "Reativar Cliente"}
+                message={
+                    clientToToggle?.status === 'active'
+                        ? `Tem certeza que deseja inativar ${clientToToggle?.name}? O cliente não aparecerá para novos agendamentos, mas seu histórico será mantido.`
+                        : `Tem certeza que deseja reativar ${clientToToggle?.name}? O cliente voltará a ficar disponível para novos agendamentos.`
+                }
+                confirmText={clientToToggle?.status === 'active' ? "Sim, Inativar" : "Sim, Reativar"}
+                isDestructive={clientToToggle?.status === 'active'}
             />
         </div>
     );
