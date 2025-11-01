@@ -60,6 +60,7 @@ export interface Service {
   name: string;
   price: number;
   duration: number; // in minutes
+  status: 'active' | 'inactive';
 }
 
 export interface Barber {

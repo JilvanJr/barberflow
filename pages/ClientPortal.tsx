@@ -218,7 +218,7 @@ const ClientPortal: React.FC<{ client: Client; onLogout: () => void; }> = ({ cli
                      <div className="text-center p-8">Carregando...</div>
                 ) : activeTab === 'services' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {services.map(service => (
+                        {services.filter(s => s.status === 'active').map(service => (
                             <div key={service.id} className="bg-white rounded-lg shadow p-6 flex flex-col justify-between border border-gray-200">
                                 <div>
                                     <h3 className="font-bold text-lg">{service.name}</h3>

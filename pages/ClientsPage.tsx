@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -114,17 +113,17 @@ const ClientModal: React.FC<{
                 <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                     <div>
                         <label className={labelClasses}>Nome</label>
-                        <input type="text" name="name" placeholder="Manuel Neuer" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                        <input type="text" name="name" placeholder="Nome completo do cliente" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                         <FormError message={errors.name} />
                     </div>
                      <div>
                         <label className={labelClasses}>Email</label>
-                        <input type="email" name="email" placeholder="client@barberflow.com" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                        <input type="email" name="email" placeholder="exemplo@email.com" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                         <FormError message={errors.email} />
                     </div>
                      <div>
                         <label className={labelClasses}>Telefone</label>
-                        <input type="tel" name="phone" placeholder="(11) 91234-5678" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} />
+                        <input type="tel" name="phone" placeholder="(11) 99999-9999" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} maxLength={16} />
                         <FormError message={errors.phone} />
                     </div>
                     <div className="flex justify-end space-x-4 pt-4">
@@ -142,9 +141,8 @@ const ClientDetailsModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (client: Client) => void;
-    onToggleStatus: (client: Client) => void;
     client: Client | null;
-}> = ({ isOpen, onClose, onSave, onToggleStatus, client }) => {
+}> = ({ isOpen, onClose, onSave, client }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Client>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,7 +180,7 @@ const ClientDetailsModal: React.FC<{
         }
     };
 
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         const fieldName = name as keyof Client;
         setErrors(prev => ({ ...prev, [fieldName]: validateField(fieldName, value) }));
@@ -255,28 +253,30 @@ const ClientDetailsModal: React.FC<{
                     </div>
                     <div>
                         <label className={labelClasses}>Situação</label>
-                        <span className={`px-2.5 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {client.status === 'active' ? 'Ativo' : 'Inativo'}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-                    <button onClick={() => onToggleStatus(client)} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${client.status === 'active' ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'}`}>
-                        {client.status === 'active' ? 'Inativar Cliente' : 'Ativar Cliente'}
-                    </button>
-                    <div className="flex space-x-3">
-                        {isEditing ? (
-                            <>
-                                <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
-                                <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar</button>
-                            </>
+                        {!isEditing ? (
+                            <span className={`px-2.5 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${formData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {formData.status === 'active' ? 'Ativo' : 'Inativo'}
+                            </span>
                         ) : (
-                            <>
-                                <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
-                                <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
-                            </>
+                            <select name="status" value={formData.status || ''} onChange={e => handleInputChange('status', e.target.value)} onBlur={handleBlur} className={inputClasses}>
+                                <option value="active">Ativo</option>
+                                <option value="inactive">Inativo</option>
+                            </select>
                         )}
                     </div>
+                </div>
+                <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200 space-x-3">
+                    {isEditing ? (
+                        <>
+                            <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
+                            <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
+                            <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -358,6 +358,8 @@ const ClientsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [sortConfig, setSortConfig] = useState<{ key: keyof Client | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
     
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -388,6 +390,10 @@ const ClientsPage: React.FC = () => {
         fetchClients();
     }, [fetchClients]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, itemsPerPage]);
+
     const requestSort = (key: keyof Client) => {
         let direction: 'ascending' | 'descending' = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -396,7 +402,7 @@ const ClientsPage: React.FC = () => {
         setSortConfig({ key, direction });
     };
 
-    const filteredClients = useMemo(() => {
+    const processedClients = useMemo(() => {
         let sortableClients = clients
             .filter(client => {
                 if (statusFilter === 'all') return true;
@@ -422,6 +428,12 @@ const ClientsPage: React.FC = () => {
         return sortableClients;
     }, [clients, searchTerm, statusFilter, sortConfig]);
 
+    const paginatedClients = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return processedClients.slice(startIndex, startIndex + itemsPerPage);
+    }, [processedClients, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(processedClients.length / itemsPerPage);
 
     const handleAddNew = () => {
         setIsCreateModalOpen(true);
@@ -432,19 +444,13 @@ const ClientsPage: React.FC = () => {
         setIsDetailsModalOpen(true);
     };
 
-    const handleToggleStatus = (client: Client) => {
-        setClientToToggle(client);
-        setIsConfirmModalOpen(true);
-    };
-
     const confirmToggleStatus = async () => {
         if (clientToToggle) {
             try {
-                const newStatus = clientToToggle.status === 'active' ? 'inactive' : 'active';
-                await api.toggleClientStatus(clientToToggle.id, newStatus);
+                await api.updateClient(clientToToggle.id!, clientToToggle);
                 fetchClients();
             } catch (error) {
-                console.error("Failed to toggle client status", error);
+                console.error("Failed to update client status", error);
                 alert('Falha ao atualizar o status do cliente.');
             } finally {
                 setIsConfirmModalOpen(false);
@@ -456,19 +462,26 @@ const ClientsPage: React.FC = () => {
 
     const handleSave = useCallback(async (clientToSave: Client) => {
         try {
-            if (clientToSave.id) {
-                await api.updateClient(clientToSave.id, clientToSave);
-            } else {
+            if (clientToSave.id) { // UPDATE
+                const originalClient = clients.find(c => c.id === clientToSave.id);
+                if (originalClient && originalClient.status !== clientToSave.status) {
+                    setClientToToggle(clientToSave);
+                    setIsConfirmModalOpen(true);
+                } else {
+                    await api.updateClient(clientToSave.id, clientToSave);
+                    setIsDetailsModalOpen(false);
+                    fetchClients();
+                }
+            } else { // CREATE
                 await api.createClient(clientToSave);
+                setIsCreateModalOpen(false);
+                fetchClients();
             }
-            setIsCreateModalOpen(false);
-            setIsDetailsModalOpen(false);
-            fetchClients();
         } catch (error) {
             console.error("Failed to save client", error);
             alert('Falha ao salvar o cliente.');
         }
-    }, [fetchClients]);
+    }, [clients, fetchClients]);
     
     const activeClients = useMemo(() => clients.filter(c => c.status === 'active').length, [clients]);
     const inactiveClients = useMemo(() => clients.filter(c => c.status === 'inactive').length, [clients]);
@@ -543,7 +556,7 @@ const ClientsPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredClients.map(client => (
+                        {paginatedClients.map(client => (
                             <tr key={client.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -563,6 +576,32 @@ const ClientsPage: React.FC = () => {
                         ))}
                     </tbody>
                 </table>
+                 {totalPages > 0 && (
+                    <div className="py-4 px-6 flex items-center justify-between border-t border-gray-200">
+                        <span className="text-sm text-gray-600">
+                            Mostrando <span className="font-semibold">{Math.min(processedClients.length, (currentPage - 1) * itemsPerPage + 1)}</span> a <span className="font-semibold">{Math.min(currentPage * itemsPerPage, processedClients.length)}</span> de <span className="font-semibold">{processedClients.length}</span> resultados
+                        </span>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Anterior
+                            </button>
+                            <span className="text-sm text-gray-700">
+                                Página {currentPage} de {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Próximo
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
             
             {currentUserPermissions?.canCreateClient && (
@@ -574,21 +613,20 @@ const ClientsPage: React.FC = () => {
                 onClose={() => setIsDetailsModalOpen(false)}
                 client={selectedClient}
                 onSave={handleSave}
-                onToggleStatus={handleToggleStatus}
             />
 
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={confirmToggleStatus}
-                title={clientToToggle?.status === 'active' ? "Inativar Cliente" : "Reativar Cliente"}
+                title={clientToToggle?.status === 'active' ? "Reativar Cliente" : "Inativar Cliente"}
                 message={
                     clientToToggle?.status === 'active'
-                        ? `Tem certeza que deseja inativar ${clientToToggle?.name}? O cliente não aparecerá para novos agendamentos, mas seu histórico será mantido.`
-                        : `Tem certeza que deseja reativar ${clientToToggle?.name}? O cliente voltará a ficar disponível para novos agendamentos.`
+                        ? `Tem certeza que deseja reativar ${clientToToggle?.name}? O cliente voltará a ficar disponível para novos agendamentos.`
+                        : `Tem certeza que deseja inativar ${clientToToggle?.name}? O cliente não aparecerá para novos agendamentos, mas seu histórico será mantido.`
                 }
-                confirmText={clientToToggle?.status === 'active' ? "Sim, Inativar" : "Sim, Reativar"}
-                isDestructive={clientToToggle?.status === 'active'}
+                confirmText={clientToToggle?.status === 'active' ? "Sim, Reativar" : "Sim, Inativar"}
+                isDestructive={clientToToggle?.status === 'inactive'}
             />
         </div>
     );

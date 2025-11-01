@@ -118,12 +118,12 @@ export const CLIENTS: Client[] = [
 ];
 
 export const SERVICES: Service[] = [
-  { id: 1, name: 'Barba', price: 15.90, duration: 20 },
-  { id: 2, name: 'Corte', price: 25.00, duration: 30 },
-  { id: 3, name: 'Corte + Barba', price: 35.90, duration: 50 },
-  { id: 4, name: 'Pezinho', price: 10.00, duration: 15 },
-  { id: 5, name: 'Relaxamento', price: 50.00, duration: 60 },
-  { id: 6, name: 'Sobrancelha', price: 15.00, duration: 15 },
+  { id: 1, name: 'Barba', price: 30.00, duration: 20, status: 'active' },
+  { id: 2, name: 'Corte', price: 50.00, duration: 30, status: 'active' },
+  { id: 3, name: 'Corte + Barba', price: 80.00, duration: 50, status: 'active' },
+  { id: 4, name: 'Pezinho', price: 10.00, duration: 15, status: 'active' },
+  { id: 5, name: 'Relaxamento', price: 70.00, duration: 60, status: 'inactive' },
+  { id: 6, name: 'Sobrancelha', price: 10.00, duration: 15, status: 'active' },
 ];
 
 export const APPOINTMENTS: Appointment[] = [

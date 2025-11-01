@@ -46,11 +46,11 @@ const TransactionModal: React.FC<{
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className={labelClasses}>Descrição</label>
-                        <input type="text" placeholder="Ex: Compra de material" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClasses} />
+                        <input type="text" placeholder="Descrição da transação" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                     </div>
                     <div>
                         <label className={labelClasses}>Valor (R$)</label>
-                        <input type="number" placeholder="0.00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className={inputClasses} />
+                        <input type="number" placeholder="0.00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                     </div>
                      <div>
                         <label className={labelClasses}>Tipo</label>

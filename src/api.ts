@@ -1,4 +1,5 @@
 
+
 /**
  * Mock API Layer
  * 
@@ -174,7 +175,7 @@ export const api = {
         await delay(NETWORK_DELAY);
         const services = storage.get<Service[]>('api_services', []);
         const newService: Service = {
-            id: Date.now(), name: serviceData.name || '', price: serviceData.price || 0, duration: serviceData.duration || 0,
+            id: Date.now(), name: serviceData.name || '', price: serviceData.price || 0, duration: serviceData.duration || 0, status: 'active',
         };
         storage.set('api_services', [...services, newService]);
         return newService;
@@ -185,10 +186,21 @@ export const api = {
         storage.set('api_services', services);
         return updatedData;
     },
-    async deleteService(id: number): Promise<void> {
+    async toggleServiceStatus(id: number, status: 'active' | 'inactive'): Promise<Service> {
         await delay(NETWORK_DELAY);
-        const services = storage.get<Service[]>('api_services', []).filter(s => s.id !== id);
+        let updatedService: Service | undefined;
+        const services = storage.get<Service[]>('api_services', []).map(s => {
+            if (s.id === id) {
+                updatedService = { ...s, status };
+                return updatedService;
+            }
+            return s;
+        });
+        if (!updatedService) {
+            throw new Error("Service not found to toggle status");
+        }
         storage.set('api_services', services);
+        return updatedService;
     },
     
     // --- BARBERS / TEAM API ---

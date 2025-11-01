@@ -323,7 +323,7 @@ const AppointmentModal: React.FC<{
                         <label className="block mb-2 text-sm font-medium text-gray-700">Serviço</label>
                         <select required value={appointmentData.serviceId} onChange={e => setAppointmentData({...appointmentData, serviceId: e.target.value, startTime: ''})} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                             <option value="">Selecione o Serviço</option>
-                            {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>)}
+                            {services.filter(s => s.status === 'active').map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>)}
                         </select>
                     </div>
 

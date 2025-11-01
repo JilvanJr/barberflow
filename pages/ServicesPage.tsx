@@ -1,9 +1,10 @@
-
 import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Service, User, Role } from '../types';
-import { PlusIcon, EditIcon, TrashIcon, XIcon, AlertTriangleIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
+import { Service, Role } from '../types';
+import { PlusIcon, XIcon, AlertTriangleIcon, ArrowUpIcon, ArrowDownIcon, EyeIcon, SearchIcon } from '../components/icons';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 const FormError: React.FC<{ message?: string }> = ({ message }) => {
     if (!message) return null;
@@ -17,21 +18,21 @@ const FormError: React.FC<{ message?: string }> = ({ message }) => {
     );
 };
 
+// Modal para CRIAR um novo serviço
 const ServiceModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (service: Service) => void;
-    service: Partial<Service> | null;
-}> = ({ isOpen, onClose, onSave, service }) => {
+}> = ({ isOpen, onClose, onSave }) => {
     const [formData, setFormData] = useState<Partial<Service>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(service || {});
+            setFormData({ name: '', price: undefined, duration: undefined });
             setErrors({});
         }
-    }, [service, isOpen]);
+    }, [isOpen]);
 
     const validateField = (name: keyof Service, value: any): string => {
         switch (name) {
@@ -98,23 +99,23 @@ const ServiceModal: React.FC<{
         <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">{service?.id ? 'Editar Serviço' : 'Novo Serviço'}</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">Novo Serviço</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                     <div>
                         <label className={labelClasses}>Nome do Serviço</label>
-                        <input type="text" name="name" placeholder="Corte Masculino" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                        <input type="text" name="name" placeholder="Nome do serviço" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                         <FormError message={errors.name} />
                     </div>
                     <div>
                         <label className={labelClasses}>Preço (R$)</label>
-                        <input type="number" name="price" step="0.01" placeholder="25.00" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                        <input type="number" name="price" step="0.01" placeholder="0.00" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                         <FormError message={errors.price} />
                     </div>
                     <div>
                         <label className={labelClasses}>Duração (minutos)</label>
-                        <input type="number" name="duration" placeholder="30" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                        <input type="number" name="duration" placeholder="30" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                         <FormError message={errors.duration} />
                     </div>
                     <div className="flex justify-end space-x-4 pt-4">
@@ -127,51 +128,203 @@ const ServiceModal: React.FC<{
     );
 };
 
-const ConfirmationModal: React.FC<{
+
+const ServiceDetailsModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-    message: string;
-}> = ({ isOpen, onClose, onConfirm, title, message }) => {
-    if (!isOpen) return null;
+    onSave: (service: Service) => void;
+    service: Service | null;
+}> = ({ isOpen, onClose, onSave, service }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState<Partial<Service>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (service) {
+            setFormData(service);
+            setIsEditing(false);
+            setErrors({});
+        }
+    }, [service]);
+
+    const validateField = (name: keyof Service, value: any): string => {
+        switch (name) {
+            case 'name':
+                return !value?.trim() ? 'O nome do serviço é obrigatório.' : '';
+            case 'price':
+                if (value === undefined || value === null || value <= 0) {
+                    return 'O preço deve ser um número positivo.';
+                }
+                return '';
+            case 'duration':
+                 if (value === undefined || value === null || value <= 0) {
+                    return 'A duração deve ser um número positivo.';
+                }
+                if (!Number.isInteger(Number(value))) {
+                    return 'A duração deve ser em minutos (número inteiro).';
+                }
+                return '';
+            default:
+                return '';
+        }
+    };
+    
+    const handleInputChange = (field: keyof Service, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
+        }
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        const fieldName = name as keyof Service;
+        setErrors(prev => ({ ...prev, [fieldName]: validateField(fieldName, value) }));
+    };
+    
+    const handleSave = () => {
+        const validationErrors: Record<string, string> = {};
+        const fieldsToValidate: (keyof Service)[] = ['name', 'price', 'duration'];
+        fieldsToValidate.forEach(key => {
+            const error = validateField(key, formData[key]);
+            if (error) validationErrors[key] = error;
+        });
+
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length === 0) {
+            onSave(formData as Service);
+            setIsEditing(false);
+        }
+    };
+    
+    const handleCancel = () => {
+        setIsEditing(false);
+        if (service) setFormData(service);
+        setErrors({});
+    };
+
+    if (!isOpen || !service) return null;
+
+    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-200 disabled:text-gray-500";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                    <AlertTriangleIcon className="h-6 w-6 text-red-600" />
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Detalhes do Serviço</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
-                <div className="flex justify-center space-x-4">
-                    <button 
-                        type="button" 
-                        onClick={onClose} 
-                        className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
-                        Cancelar
-                    </button>
-                    <button 
-                        type="button" 
-                        onClick={onConfirm} 
-                        className="px-6 py-2.5 w-full bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
-                        Sim, Excluir
-                    </button>
+                <div className="space-y-4">
+                     <div>
+                        <label className={labelClasses}>Nome do Serviço</label>
+                        <input type="text" name="name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.name} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Preço (R$)</label>
+                        <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.price} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Duração (minutos)</label>
+                        <input type="number" name="duration" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.duration} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Situação</label>
+                        {!isEditing ? (
+                             <span className={`px-2.5 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${formData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {formData.status === 'active' ? 'Ativo' : 'Inativo'}
+                            </span>
+                        ) : (
+                            <select name="status" value={formData.status || ''} onChange={e => handleInputChange('status', e.target.value)} onBlur={handleBlur} className={inputClasses}>
+                                <option value="active">Ativo</option>
+                                <option value="inactive">Inativo</option>
+                            </select>
+                        )}
+                    </div>
+                </div>
+                <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200 space-x-3">
+                    {isEditing ? (
+                        <>
+                            <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
+                            <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
+                            <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
+const ConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+    confirmText: string;
+    isDestructive: boolean;
+}> = ({ isOpen, onClose, onConfirm, title, message, confirmText, isDestructive }) => {
+    if (!isOpen) return null;
+    
+    const confirmButtonClasses = isDestructive
+        ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500";
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
+                <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${isDestructive ? 'bg-red-100' : 'bg-blue-100'}`}>
+                    <AlertTriangleIcon className={`h-6 w-6 ${isDestructive ? 'text-red-600' : 'text-blue-600'}`} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
+                <p className="text-gray-600 my-4">{message}</p>
+                <div className="flex justify-center space-x-4">
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-full text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const FilterButton: React.FC<{
+    filter: StatusFilter;
+    label: string;
+    currentFilter: StatusFilter;
+    onClick: (filter: StatusFilter) => void;
+}> = ({ filter, label, currentFilter, onClick }) => (
+    <button
+        onClick={() => onClick(filter)}
+        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${currentFilter === filter ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border'}`}
+    >
+        {label}
+    </button>
+);
+
 const ServicesPage: React.FC = () => {
     const context = useContext(AppContext);
     const [services, setServices] = useState<Service[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    const [serviceToDeleteId, setServiceToDeleteId] = useState<number | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [sortConfig, setSortConfig] = useState<{ key: keyof Service | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+    
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [serviceToToggle, setServiceToToggle] = useState<Service | null>(null);
     
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
@@ -195,6 +348,10 @@ const ServicesPage: React.FC = () => {
         fetchServices();
     }, [fetchServices]);
 
+     useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, itemsPerPage]);
+
     const requestSort = (key: keyof Service) => {
         let direction: 'ascending' | 'descending' = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -203,8 +360,16 @@ const ServicesPage: React.FC = () => {
         setSortConfig({ key, direction });
     };
 
-    const sortedServices = useMemo(() => {
-        let sortableServices = [...services];
+    const processedServices = useMemo(() => {
+        let sortableServices = services
+            .filter(service => {
+                if (statusFilter === 'all') return true;
+                return service.status === statusFilter;
+            })
+            .filter(service =>
+                service.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
         if (sortConfig.key) {
             sortableServices.sort((a, b) => {
                 const aValue = a[sortConfig.key!];
@@ -215,52 +380,62 @@ const ServicesPage: React.FC = () => {
             });
         }
         return sortableServices;
-    }, [services, sortConfig]);
+    }, [services, searchTerm, statusFilter, sortConfig]);
+
+    const paginatedServices = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return processedServices.slice(startIndex, startIndex + itemsPerPage);
+    }, [processedServices, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(processedServices.length / itemsPerPage);
 
     const handleAddNew = () => {
-        setEditingService({ name: '', price: undefined, duration: undefined });
-        setIsModalOpen(true);
+        setIsCreateModalOpen(true);
     };
 
-    const handleEdit = (service: Service) => {
-        setEditingService(service);
-        setIsModalOpen(true);
+    const handleViewDetails = (service: Service) => {
+        setSelectedService(service);
+        setIsDetailsModalOpen(true);
     };
 
-    const handleDelete = (serviceId: number) => {
-        setServiceToDeleteId(serviceId);
-        setIsConfirmModalOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        if (serviceToDeleteId) {
+    const confirmToggleStatus = async () => {
+        if (serviceToToggle) {
             try {
-                await api.deleteService(serviceToDeleteId);
-                setServices(prevServices => prevServices.filter(s => s.id !== serviceToDeleteId));
+                await api.updateService(serviceToToggle.id!, serviceToToggle);
+                fetchServices();
             } catch (error) {
-                console.error("Failed to delete service", error);
-                alert("Falha ao excluir o serviço.");
+                console.error("Failed to update service status", error);
+                alert('Falha ao atualizar o status do serviço.');
             } finally {
                 setIsConfirmModalOpen(false);
-                setServiceToDeleteId(null);
+                setServiceToToggle(null);
+                setIsDetailsModalOpen(false);
             }
         }
     };
 
     const handleSave = useCallback(async (serviceToSave: Service) => {
         try {
-            if (serviceToSave.id) {
-                await api.updateService(serviceToSave.id, serviceToSave);
-            } else {
+            if (serviceToSave.id) { // UPDATE
+                const originalService = services.find(s => s.id === serviceToSave.id);
+                if (originalService && originalService.status !== serviceToSave.status) {
+                    setServiceToToggle(serviceToSave);
+                    setIsConfirmModalOpen(true);
+                } else {
+                    await api.updateService(serviceToSave.id, serviceToSave);
+                    setIsDetailsModalOpen(false);
+                    fetchServices();
+                }
+            } else { // CREATE
                 await api.createService(serviceToSave);
+                setIsCreateModalOpen(false);
+                fetchServices();
             }
-            setIsModalOpen(false);
-            fetchServices();
         } catch(error) {
              console.error("Failed to save service", error);
             alert("Falha ao salvar o serviço.");
         }
-    }, [fetchServices]);
+    }, [services, fetchServices]);
 
     const SortableHeader: React.FC<{ columnKey: keyof Service; title: string; }> = ({ columnKey, title }) => {
         const isSorted = sortConfig.key === columnKey;
@@ -284,54 +459,118 @@ const ServicesPage: React.FC = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Serviços</h2>
-                {currentUserPermissions?.canCreateService && (
-                    <button onClick={handleAddNew} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-                        <PlusIcon className="w-5 h-5" />
-                        <span>Novo Serviço</span>
-                    </button>
-                )}
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Gestão de Serviços</h1>
+                <p className="text-sm text-gray-500">Adicione, edite e gerencie os serviços oferecidos pela barbearia.</p>
+            </div>
+            <div className="flex justify-between items-center mb-4">
+                 <div className="flex items-center space-x-2">
+                    <FilterButton filter="all" label="Todos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="active" label="Ativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="inactive" label="Inativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                </div>
+                <div className="flex items-center space-x-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Buscar serviço..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                    {currentUserPermissions?.canCreateService && (
+                        <button onClick={handleAddNew} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                            <PlusIcon className="w-5 h-5" />
+                            <span>Novo Serviço</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <SortableHeader columnKey="name" title="Nome do Serviço" />
+                            <SortableHeader columnKey="name" title="Serviço" />
                             <SortableHeader columnKey="price" title="Preço" />
                             <SortableHeader columnKey="duration" title="Duração" />
-                            {(currentUserPermissions?.canEditService || currentUserPermissions?.canDeleteService) && (
-                                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
-                            )}
+                            <SortableHeader columnKey="status" title="Situação" />
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedServices.map(service => (
+                        {paginatedServices.map(service => (
                            <tr key={service.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R$ {Number(service.price).toFixed(2).replace('.', ',')}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.duration} min</td>
-                                {(currentUserPermissions?.canEditService || currentUserPermissions?.canDeleteService) && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        {currentUserPermissions?.canEditService && <button onClick={() => handleEdit(service)} className="text-blue-600 hover:text-blue-900"><EditIcon className="w-5 h-5"/></button>}
-                                        {currentUserPermissions?.canDeleteService && <button onClick={() => handleDelete(service.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>}
-                                    </td>
-                                )}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${service.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {service.status === 'active' ? 'Ativo' : 'Inativo'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button onClick={() => handleViewDetails(service)} className="text-gray-500 hover:text-blue-600" title="Ver Detalhes">
+                                        <EyeIcon className="w-5 h-5"/>
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                 {totalPages > 0 && (
+                    <div className="py-4 px-6 flex items-center justify-between border-t border-gray-200">
+                        <span className="text-sm text-gray-600">
+                            Mostrando <span className="font-semibold">{Math.min(processedServices.length, (currentPage - 1) * itemsPerPage + 1)}</span> a <span className="font-semibold">{Math.min(currentPage * itemsPerPage, processedServices.length)}</span> de <span className="font-semibold">{processedServices.length}</span> resultados
+                        </span>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Anterior
+                            </button>
+                            <span className="text-sm text-gray-700">
+                                Página {currentPage} de {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Próximo
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-             {(currentUserPermissions?.canCreateService || currentUserPermissions?.canEditService) && (
-                <ServiceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} service={editingService} />
+
+             {currentUserPermissions?.canCreateService && (
+                <ServiceModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} />
              )}
+            
+            <ServiceDetailsModal 
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                service={selectedService}
+                onSave={handleSave}
+            />
+
              <ConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={confirmDelete}
-                title="Confirmar Exclusão"
-                message="Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
+                onConfirm={confirmToggleStatus}
+                title={serviceToToggle?.status === 'active' ? "Reativar Serviço" : "Inativar Serviço"}
+                message={
+                    serviceToToggle?.status === 'active'
+                        ? `Tem certeza que deseja reativar ${serviceToToggle?.name}? O serviço voltará a ficar disponível.`
+                        : `Tem certeza que deseja inativar ${serviceToToggle?.name}? O serviço não aparecerá para novos agendamentos.`
+                }
+                confirmText={serviceToToggle?.status === 'active' ? "Sim, Reativar" : "Sim, Inativar"}
+                isDestructive={serviceToToggle?.status === 'inactive'}
             />
         </div>
     );

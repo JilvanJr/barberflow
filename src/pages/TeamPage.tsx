@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -37,15 +38,15 @@ const BarberModal: React.FC<{
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className={labelClasses}>Nome</label>
-                        <input type="text" required value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClasses} />
+                        <input type="text" placeholder="Nome completo" required value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                     </div>
                      <div>
                         <label className={labelClasses}>Email</label>
-                        <input type="email" required value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClasses} />
+                        <input type="email" placeholder="exemplo@email.com" required value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                     </div>
                      <div>
                         <label className={labelClasses}>URL do Avatar</label>
-                        <input type="text" placeholder="https://..." required value={formData.avatarUrl || ''} onChange={e => setFormData({...formData, avatarUrl: e.target.value})} className={inputClasses} />
+                        <input type="text" placeholder="https://exemplo.com/avatar.png" required value={formData.avatarUrl || ''} onChange={e => setFormData({...formData, avatarUrl: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
