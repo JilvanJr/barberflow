@@ -22,9 +22,4 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 ---- 
 Historico do que está sendo realizado:
 
-- Adição da Regra de Desenvolvimento nº 12 ao README para formalizar o padrão de paginação em tabelas.
-- Implementação de paginação nas tabelas de Clientes e Serviços para consistência com a tela de Caixa.
-- Padronização dos placeholders nos modais de "Novo Serviço", "Novo Membro" e "Nova Transação" para seguir a nova regra de desenvolvimento (texto genérico, itálico e cor cinza claro).
-- Adição da Regra de Desenvolvimento nº 11 ao README para formalizar o padrão de placeholders.
-- Correção da lógica de exibição da mensagem de confirmação ao ativar/inativar um cliente ou serviço.
-- Ajuste no modal de "Novo Cliente" para usar placeholders genéricos e com estilo visual diferenciado, melhorando a usabilidade.
+- Ajuste no layout da Agenda para exibir horários em intervalos de 30 minutos e unificar bloqueios como "Agenda Bloqueada".

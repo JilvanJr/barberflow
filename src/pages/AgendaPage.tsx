@@ -632,25 +632,17 @@ const AgendaPage: React.FC = () => {
     
     const UnavailableBlock: React.FC<{ top: number; height: number; label: string }> = ({ top, height, label }) => {
         if (height <= 10) return null;
-
-        let containerClasses = "h-full rounded-xl p-2";
-        let textClasses = "font-semibold text-sm";
-
-        if (label === 'Almoço') {
-            containerClasses += " border-2 border-dashed border-orange-400 bg-orange-50";
-            textClasses += " text-orange-600";
-        } else { // 'Fechado' or 'Ausência'
-            containerClasses += " border-2 border-dashed border-slate-500 bg-slate-400";
-            textClasses += " text-white";
-        }
-
+        
         return (
             <div
                 className="absolute w-full px-1 z-0 unavailable-block"
                 style={{ top: `${top}px`, height: `${height}px` }}
             >
-                <div className={containerClasses}>
-                    <span className={textClasses}>{label}</span>
+                <div className="h-full rounded-[4px] bg-[#F5F5F5] border border-black/10 flex items-center overflow-hidden">
+                    <div className="w-1.5 h-full bg-black/10 flex-shrink-0" />
+                    <div className="pl-2">
+                        <span className="font-medium text-sm text-gray-500">{label}</span>
+                    </div>
                 </div>
             </div>
         );
@@ -704,10 +696,10 @@ const AgendaPage: React.FC = () => {
                 </div>
                 <div className="overflow-y-auto" style={{ height: 'calc(100vh - 280px)' }}>
                     <div className="flex relative">
-                        <div className="w-24 flex-shrink-0 text-right pr-4 pt-10">
+                        <div className="w-24 flex-shrink-0 text-right pr-4 pt-4">
                             {timeSlots.map(time => (
                                 <div key={time} style={{height: `${timeSlotHeight}px`}} className="relative">
-                                    <span className="text-sm text-gray-500 absolute -top-2.5 right-4">{time.endsWith('00') ? time : ''}</span>
+                                    <span className="text-xs text-gray-500 absolute -top-2 right-4">{time}</span>
                                 </div>
                             ))}
                         </div>
@@ -715,7 +707,7 @@ const AgendaPage: React.FC = () => {
                             {/* Background Lines */}
                             <div className="absolute inset-0">
                                 {timeSlots.map((_, index) => (
-                                    <div key={index} style={{height: `${timeSlotHeight}px`}} className={`border-t border-gray-100 ${index % 2 === 0 ? '' : 'border-dashed'}`}></div>
+                                    <div key={index} style={{height: `${timeSlotHeight}px`}} className={`border-t border-gray-100 ${index % 2 !== 0 ? '' : 'border-dashed'}`}></div>
                                 ))}
                             </div>
                             
@@ -743,13 +735,13 @@ const AgendaPage: React.FC = () => {
                                                 <UnavailableBlock 
                                                     top={timeToPosition('09:00')}
                                                     height={timeToPosition(dayOperatingHours.openTime) - timeToPosition('09:00')}
-                                                    label="Fechado"
+                                                    label="Agenda Bloqueada"
                                                 />
                                                 {/* Barber absent before work */}
                                                 <UnavailableBlock 
                                                     top={timeToPosition(dayOperatingHours.openTime)}
                                                     height={timeToPosition(barber.workStartTime || dayOperatingHours.openTime) - timeToPosition(dayOperatingHours.openTime)}
-                                                    label="Ausência"
+                                                    label="Agenda Bloqueada"
                                                 />
 
                                                 {/* Lunch Break */}
@@ -757,7 +749,7 @@ const AgendaPage: React.FC = () => {
                                                     <UnavailableBlock 
                                                         top={timeToPosition(barber.lunchStartTime)}
                                                         height={getAppointmentDuration(barber.lunchStartTime, barber.lunchEndTime) * pixelsPerMinute}
-                                                        label="Almoço"
+                                                        label="Agenda Bloqueada"
                                                     />
                                                 )}
                                                 
@@ -765,14 +757,14 @@ const AgendaPage: React.FC = () => {
                                                 <UnavailableBlock
                                                     top={timeToPosition(barber.workEndTime || dayOperatingHours.closeTime)}
                                                     height={timeToPosition(dayOperatingHours.closeTime) - timeToPosition(barber.workEndTime || dayOperatingHours.closeTime)}
-                                                    label="Ausência"
+                                                    label="Agenda Bloqueada"
                                                 />
 
                                                 {/* After Shop closes */}
                                                 <UnavailableBlock
                                                     top={timeToPosition(dayOperatingHours.closeTime)}
                                                     height={timeToPosition('19:30') - timeToPosition(dayOperatingHours.closeTime)}
-                                                    label="Fechado"
+                                                    label="Agenda Bloqueada"
                                                 />
                                             </>
                                         )}
@@ -793,11 +785,14 @@ const AgendaPage: React.FC = () => {
                                                <div 
                                                     onClick={() => handleAppointmentClick(app)}
                                                     title={tooltipText}
-                                                    className="bg-blue-100 border border-blue-300 rounded-lg p-2 h-full overflow-hidden cursor-pointer shadow-sm hover:bg-blue-200 transition-colors"
+                                                    className="bg-[#0084FF]/50 border border-[#0084FF] rounded-[4px] flex h-full overflow-hidden cursor-pointer shadow-sm hover:bg-[#0084FF]/60 transition-colors"
                                                 >
-                                                    <p className="font-bold text-blue-800 truncate">{client?.name}</p>
-                                                    <p className="text-sm text-blue-700 truncate">{service?.name}</p>
-                                                    <p className="text-sm text-blue-600">{app.startTime} - {app.endTime}</p>
+                                                    <div className="w-1.5 bg-[#0084FF] flex-shrink-0"></div>
+                                                    <div className="p-2 overflow-hidden flex-grow">
+                                                        <p className="font-bold text-sm text-white truncate">{client?.name}</p>
+                                                        <p className="text-xs text-white/90 truncate">{app.startTime} - {app.endTime}</p>
+                                                        <p className="text-xs text-white/80 truncate">{service?.name}</p>
+                                                    </div>
                                                </div>
                                             </div>
                                         )
