@@ -459,10 +459,6 @@ const ServicesPage: React.FC = () => {
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Gestão de Serviços</h1>
-                <p className="text-sm text-gray-500">Adicione, edite e gerencie os serviços oferecidos pela barbearia.</p>
-            </div>
             <div className="flex justify-between items-center mb-4">
                  <div className="flex items-center space-x-2">
                     <FilterButton filter="all" label="Todos" currentFilter={statusFilter} onClick={setStatusFilter} />
@@ -496,7 +492,7 @@ const ServicesPage: React.FC = () => {
                             <SortableHeader columnKey="name" title="Serviço" />
                             <SortableHeader columnKey="price" title="Preço" />
                             <SortableHeader columnKey="duration" title="Duração" />
-                            <SortableHeader columnKey="status" title="Situação" />
+                            <SortableHeader columnKey="status" title="Status" />
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                         </tr>
                     </thead>

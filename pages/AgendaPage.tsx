@@ -638,7 +638,7 @@ const AgendaPage: React.FC = () => {
                 className="absolute w-full px-1 z-0 unavailable-block"
                 style={{ top: `${top}px`, height: `${height}px` }}
             >
-                <div className="h-full rounded-[4px] bg-[#F5F5F5] border border-black/10 flex items-center overflow-hidden">
+                <div className="h-full rounded-[4px] bg-[#F5F5F5] border border-black/10 flex items-start pt-1 overflow-hidden">
                     <div className="w-1.5 h-full bg-black/10 flex-shrink-0" />
                     <div className="pl-2">
                         <span className="font-medium text-sm text-gray-500">{label}</span>
@@ -785,13 +785,13 @@ const AgendaPage: React.FC = () => {
                                                <div 
                                                     onClick={() => handleAppointmentClick(app)}
                                                     title={tooltipText}
-                                                    className="bg-[#0084FF]/50 border border-[#0084FF] rounded-[4px] flex h-full overflow-hidden cursor-pointer shadow-sm hover:bg-[#0084FF]/60 transition-colors"
+                                                    className="bg-blue-100 border border-blue-300 rounded-[4px] flex h-full overflow-hidden cursor-pointer shadow-sm hover:bg-blue-200 transition-colors"
                                                 >
-                                                    <div className="w-1.5 bg-[#0084FF] flex-shrink-0"></div>
+                                                    <div className="w-1.5 bg-[#003C74] flex-shrink-0"></div>
                                                     <div className="p-2 overflow-hidden flex-grow">
-                                                        <p className="font-bold text-sm text-white truncate">{client?.name}</p>
-                                                        <p className="text-xs text-white/90 truncate">{app.startTime} - {app.endTime}</p>
-                                                        <p className="text-xs text-white/80 truncate">{service?.name}</p>
+                                                        <p className="font-medium text-xs text-[#003C74] truncate">{client?.name}</p>
+                                                        <p className="text-xs text-gray-600 truncate">{app.startTime} - {app.endTime}</p>
+                                                        <p className="text-xs text-gray-600 truncate">{service?.name}</p>
                                                     </div>
                                                </div>
                                             </div>

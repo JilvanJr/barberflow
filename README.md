@@ -22,4 +22,3 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 ---- 
 Historico do que está sendo realizado:
 
-- Ajuste no layout da Agenda para exibir horários em intervalos de 30 minutos e unificar bloqueios como "Agenda Bloqueada".

@@ -508,11 +508,6 @@ const ClientsPage: React.FC = () => {
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Gestão de Clientes</h1>
-                <p className="text-sm text-gray-500">Adicione, edite e gerencie as informações dos seus clientes.</p>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <StatCard icon={UsersIcon} title="Total de Clientes" value={clients.length} color="blue" />
                 <StatCard icon={UserCheckIcon} title="Clientes Ativos" value={activeClients} color="green" />
