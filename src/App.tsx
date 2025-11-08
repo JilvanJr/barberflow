@@ -1,5 +1,5 @@
 import React, { useState, createContext, useMemo, useEffect, useCallback, useContext } from 'react';
-import { Role } from './types';
+import { Role, Appointment } from './types';
 import type { User, Client } from './types';
 import Dashboard from './components/Dashboard';
 import AuthPage from './pages/AuthPage';
@@ -28,6 +28,8 @@ interface AppContextType {
   selectedUserIdForPermissions: number | null;
   setSelectedUserIdForPermissions: React.Dispatch<React.SetStateAction<number | null>>;
   showToast: (message: string, type: 'success' | 'error') => void;
+  mockAppointments: Appointment[];
+  mockAppointmentsDate: string | null;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -66,6 +68,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUserIdForPermissions, setSelectedUserIdForPermissions] = useState<number | null>(null);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
+  
+  const [mockAppointments, setMockAppointments] = useState<Appointment[]>([]);
+  const [mockAppointmentsDate, setMockAppointmentsDate] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
@@ -82,9 +87,25 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('authToken');
+    sessionStorage.removeItem('mock_data_generated'); // Clear mock data flag on logout
     setToken(null);
     setCurrentUser(null);
+    setMockAppointments([]);
+    setMockAppointmentsDate(null);
   }, []);
+  
+  // Effect to generate mock data on initial load for staff
+  useEffect(() => {
+    const generateInitialData = async () => {
+        if (currentUser && currentUser.role !== Role.CLIENT && !sessionStorage.getItem('mock_data_generated')) {
+            const { targetDate, appointments } = await api.generateMockAppointmentsForToday();
+            setMockAppointments(appointments);
+            setMockAppointmentsDate(targetDate);
+            sessionStorage.setItem('mock_data_generated', 'true');
+        }
+    };
+    generateInitialData();
+  }, [currentUser]);
 
   useEffect(() => {
     const validateToken = async () => {
@@ -118,7 +139,9 @@ const App: React.FC = () => {
     selectedUserIdForPermissions,
     setSelectedUserIdForPermissions,
     showToast,
-  }), [currentUser, handleLogout, users, token, isLoading, selectedUserIdForPermissions]);
+    mockAppointments,
+    mockAppointmentsDate,
+  }), [currentUser, handleLogout, users, token, isLoading, selectedUserIdForPermissions, mockAppointments, mockAppointmentsDate]);
 
   if (isLoading) {
     return (

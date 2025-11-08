@@ -57,6 +57,20 @@ const createFakeToken = (user: User | Client) => {
     return `fake-token-for-${btoa(JSON.stringify(payload))}`;
 };
 
+// Helper to convert "HH:MM" to minutes from midnight
+const timeToMinutes = (time: string): number => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) return 0;
+    const [hours, minutes] = time.split(':').map(Number);
+    return isNaN(hours) || isNaN(minutes) ? 0 : hours * 60 + minutes;
+};
+
+// Helper to convert minutes from midnight to "HH:MM"
+const minutesToTime = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
 // --- API Object ---
 export const api = {
     // --- AUTH API ---
@@ -431,5 +445,92 @@ export const api = {
         if (!updatedUser) throw new Error("User not found");
         storage.set('api_users', users);
         return updatedUser;
+    },
+    
+    // --- DEV/TESTING API ---
+    async generateMockAppointmentsForToday(): Promise<{ targetDate: string, appointments: Appointment[] }> {
+        await delay(NETWORK_DELAY);
+        const operatingHours = storage.get('api_operating_hours', DEFAULT_OPERATING_HOURS);
+        const allUsers = storage.get<User[]>('api_users', []);
+        const allServices = storage.get<Service[]>('api_services', []);
+        const allClients = storage.get<Client[]>('api_clients', []);
+        
+        const activeBarbers = allUsers.filter(u => u.status === 'active' && u.jobTitle === 'Barbeiro');
+        const activeServices = allServices.filter(s => s.status === 'active');
+        const activeClients = allClients.filter(c => c.status === 'active');
+
+        if (activeBarbers.length === 0 || activeServices.length === 0 || activeClients.length === 0) {
+            return { targetDate: new Date().toISOString().split('T')[0], appointments: [] };
+        }
+
+        // 1. Find the target date (today or next open day)
+        let targetDate = new Date();
+        let targetDateStr = '';
+        let dayOfWeek: keyof OperatingHours;
+
+        for (let i = 0; i < 7; i++) {
+            dayOfWeek = targetDate.toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
+            if (operatingHours[dayOfWeek].isOpen) {
+                targetDateStr = targetDate.toISOString().split('T')[0];
+                break;
+            }
+            targetDate.setDate(targetDate.getDate() + 1);
+        }
+
+        if (!targetDateStr) { // Should not happen with default settings
+             return { targetDate: new Date().toISOString().split('T')[0], appointments: [] };
+        }
+
+        // 2. Generate new appointments
+        const newAppointments: Appointment[] = [];
+        const shopDayConfig = operatingHours[dayOfWeek!];
+
+        for (const barber of activeBarbers) {
+            const dayStart = Math.max(timeToMinutes(shopDayConfig.openTime), timeToMinutes(barber.workStartTime));
+            const dayEnd = Math.min(timeToMinutes(shopDayConfig.closeTime), timeToMinutes(barber.workEndTime));
+            const lunchStart = timeToMinutes(barber.lunchStartTime);
+            const lunchEnd = timeToMinutes(barber.lunchEndTime);
+
+            let currentTime = dayStart;
+
+            while (currentTime < dayEnd) {
+                // 30% chance to leave a 30-min gap
+                if (Math.random() < 0.3) {
+                    currentTime += 30;
+                    continue;
+                }
+                
+                const service = activeServices[Math.floor(Math.random() * activeServices.length)];
+                const client = activeClients[Math.floor(Math.random() * activeClients.length)];
+
+                const slotStart = currentTime;
+                const slotEnd = currentTime + service.duration;
+
+                // Check if slot is valid
+                if (slotEnd > dayEnd || (slotStart < lunchEnd && slotEnd > lunchStart)) {
+                    currentTime += 15; // Try next 15-min interval
+                    continue;
+                }
+                
+                newAppointments.push({
+                    id: Date.now() + newAppointments.length,
+                    barberId: barber.id,
+                    clientId: client.id,
+                    serviceId: service.id,
+                    date: targetDateStr,
+                    startTime: minutesToTime(slotStart),
+                    endTime: minutesToTime(slotEnd)
+                });
+
+                currentTime = slotEnd;
+            }
+        }
+        
+        // 3. Update storage
+        const allAppointments = storage.get<Appointment[]>('api_appointments', []);
+        const otherDayAppointments = allAppointments.filter(app => app.date !== targetDateStr);
+        storage.set('api_appointments', [...otherDayAppointments, ...newAppointments]);
+
+        return { targetDate: targetDateStr, appointments: newAppointments };
     }
 };

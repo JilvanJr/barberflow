@@ -43,12 +43,51 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 13. **Feedback de Ações com Toast:** Todas as ações de criação, atualização ou exclusão (CUD) bem-sucedidas devem exibir uma notificação do tipo "Toast" para fornecer feedback claro e imediato ao usuário. A mensagem deve ser concisa e informativa (ex: "Cliente salvo com sucesso!").
 14. **Análise de Impacto Sistêmico:** Antes de implementar qualquer alteração, o time de especialistas deve realizar uma análise de impacto em toda a aplicação para identificar e mitigar riscos, efeitos colaterais e inconsistências. Os riscos e as ações de mitigação identificados devem ser comunicados ao usuário como parte do plano de ação.
 15. **Criação de Cenários de Teste:** Para cada nova funcionalidade, alteração ou correção implementada, um ou mais cenários de teste básicos devem ser criados e adicionados a uma nova seção no `README.md` chamada "Cenários para Teste". Estes cenários devem descrever os passos para validar a implementação (ex: "Acessar a tela X, clicar no botão Y, verificar se o modal Z é exibido"). Esta seção, assim como o histórico de commits, deve ser limpa após a confirmação do commit.
+16. **Carregamento de Dados de Teste na Agenda:** Para facilitar os testes, ao carregar a aplicação pela primeira vez em uma sessão, o sistema deve simular o carregamento de agendamentos. Esta regra deve respeitar o horário de funcionamento: se o dia de "hoje" for um dia em que a barbearia está fechada (ex: Domingo), os agendamentos de teste devem ser criados para o próximo dia útil. A HomePage e a Agenda já devem iniciar com os dados populados no dia correto. Esta funcionalidade é exclusiva para o ambiente de desenvolvimento e será removida na integração com o backend real.
 
 ## Cenários para Teste
 
-*(Esta seção é preenchida com os cenários de teste antes de cada commit e limpa após a confirmação.)*
+*   **Cenário 1: Validação de UI da Agenda**
+    1.  Acesse a tela "Agenda".
+    2.  Verifique se o botão "Hoje" possui a mesma altura dos botões "Seletor de Data" e "Novo Agendamento".
+    3.  Localize um agendamento existente (ex: Lionel Messi). Verifique se o nome do cliente está com a fonte maior (14px).
+    4.  Role a agenda para encontrar um horário de almoço ou fora do expediente (bloco "Agenda Bloqueada"). Verifique se a listra cinza à esquerda está completa, sem falhas no canto superior.
+    5.  Confirme que as linhas divisórias entre as colunas dos barbeiros no cabeçalho estão perfeitamente alinhadas com as linhas da grade de horários abaixo.
+
+*   **Cenário 2: Validação de Restrição de Datas Passadas**
+    1.  Acesse a tela "Agenda".
+    2.  Clique no seletor de data.
+    3.  Tente selecionar uma data anterior ao dia de hoje. A ação deve ser bloqueada.
+    4.  Mude a data no código para uma data passada (ex: `useState('2024-01-01')`) para forçar a visualização.
+    5.  Passe o mouse sobre a grade de horários. O cursor deve ser o de "não permitido" (`not-allowed`).
+    6.  Tente clicar em um horário vago. Nenhuma ação (abertura de modal) deve ocorrer.
+
+*   **Cenário 3: Validação do Horário de Fechamento**
+    1.  Acesse "Configurações" -> "Horário de Funcionamento". Confirme que Sábado fecha às 17:00 e Sexta-feira às 19:00.
+    2.  Volte para a "Agenda" e selecione uma data que seja um Sábado (ex: 8 de nov de 2025).
+    3.  Verifique se a grade de horários termina às 17:00 (o último horário exibido na lateral deve ser `16:30`).
+    4.  Selecione uma data que seja uma Sexta-feira.
+    5.  Verifique se a grade de horários termina às 19:00 (o último horário exibido na lateral deve ser `18:30`).
+
+*   **Cenário 4: Carregamento de Dados de Teste (Botão Hoje)**
+    1.  Acesse a "Agenda".
+    2.  Clique no botão "Hoje". A data do calendário deve ser alterada para a data atual.
+
+*   **Cenário 5: Carregamento Automático de Dados**
+    1.  Limpe os dados de sessão do navegador e acesse a aplicação em um dia de semana (ex: Quarta-feira).
+    2.  Verifique se a `HomePage` exibe o título "Agendamentos do Dia" com uma lista de agendamentos.
+    3.  Limpe os dados de sessão novamente e altere a data do seu sistema para um Domingo.
+    4.  Acesse a aplicação. Verifique se a `HomePage` exibe o título "Agendamentos para Segunda-feira" com uma lista de agendamentos.
+    5.  Navegue para a "Agenda". Verifique se a data selecionada no calendário é a da Segunda-feira.
 
 ---- 
 Historico do que está sendo realizado:
 
-*(Este histórico é limpo após cada commit.)*
+*   **Correção de UI (Agenda):** Padronizado o tamanho do botão "Hoje" para corresponder aos outros botões do cabeçalho, garantindo consistência visual.
+*   **Correção de UI (Agenda):** Aumentado o tamanho da fonte do nome do cliente no card de agendamento para 14px (`text-sm`).
+*   **Correção de UI (Agenda):** Corrigido o bug visual na borda do evento "Agenda Bloqueada", garantindo que a listra lateral seja contínua.
+*   **Correção de UI (Agenda):** Corrigido o desalinhamento das colunas da agenda (causado pela barra de rolagem), adicionando um preenchimento no cabeçalho para garantir o alinhamento perfeito com a grade.
+*   **Refatoração (Agenda):** A grade de horários da agenda agora é gerada dinamicamente com base no horário de funcionamento da barbearia.
+*   **Melhoria de UX (Agenda):** Bloqueada a interação (clique e agendamento) em datas passadas na agenda e no seletor de data.
+*   **Correção (Agenda):** Corrigido o bug onde a grade de horários não respeitava o horário de fechamento do dia selecionado, exibindo horários extras. A agenda agora renderiza a grade dinamicamente com base no dia específico.
+*   **Funcionalidade de Teste (Core):** Implementada a Regra nº 16. Os dados de teste agora são gerados automaticamente no carregamento inicial da aplicação, populando a HomePage e a Agenda de forma inteligente com base no próximo dia útil.

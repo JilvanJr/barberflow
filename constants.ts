@@ -151,14 +151,7 @@ export const SERVICES: Service[] = [
   { id: 38, name: 'Sobrancelha', price: 30, duration: 10, status: 'active' },
 ];
 
-export const APPOINTMENTS: Appointment[] = [
-    { id: 1, barberId: 1, clientId: 1, serviceId: 2, startTime: '09:30', endTime: '10:10', date: today },
-    { id: 2, barberId: 2, clientId: 2, serviceId: 3, startTime: '10:00', endTime: '11:00', date: today },
-    { id: 3, barberId: 3, clientId: 3, serviceId: 1, startTime: '11:30', endTime: '12:10', date: today },
-    { id: 4, barberId: 1, clientId: 4, serviceId: 4, startTime: '14:00', endTime: '14:30', date: today },
-    { id: 5, barberId: 4, clientId: 5, serviceId: 38, startTime: '16:00', endTime: '16:10', date: today },
-    { id: 6, barberId: 1, clientId: 2, serviceId: 2, startTime: '15:30', endTime: '16:10', date: today },
-];
+export const APPOINTMENTS: Appointment[] = [];
 
 export const TRANSACTIONS: Transaction[] = [
     { id: '#ORD001', date: today, name: 'Cliente 1', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },

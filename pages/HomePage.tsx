@@ -18,24 +18,24 @@ const HomePage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [barbers, setBarbers] = useState<Barber[]>([]);
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+
+    const { mockAppointments, mockAppointmentsDate } = context || {};
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [trans, bar, apps, cli, serv] = await Promise.all([
+                // Fetch data that isn't pre-loaded
+                const [trans, bar, cli, serv] = await Promise.all([
                     api.getTransactions(),
                     api.getBarbers(),
-                    api.getAppointments(),
                     api.getClients(),
                     api.getServices()
                 ]);
                 setTransactions(trans);
                 setBarbers(bar);
-                setAppointments(apps);
                 setClients(cli);
                 setServices(serv);
             } catch (error) {
@@ -46,7 +46,7 @@ const HomePage: React.FC = () => {
         };
         fetchData();
     }, []);
-
+    
     const today = getTodayLocalISOString();
 
     const todaysRevenue = useMemo(() => {
@@ -54,20 +54,30 @@ const HomePage: React.FC = () => {
             .filter(t => t.date === today && t.type === TransactionType.INCOME && t.paymentStatus === 'completed')
             .reduce((sum, t) => sum + t.value, 0);
     }, [transactions, today]);
+    
+    const relevantAppointments = useMemo(() => {
+        return (mockAppointments && mockAppointmentsDate) ? mockAppointments.filter(app => app.date === mockAppointmentsDate) : [];
+    }, [mockAppointments, mockAppointmentsDate]);
+
 
     const availableBarbers = useMemo(() => {
-        const workingBarberIds = new Set(
-            appointments.filter(app => app.date === today).map(app => app.barberId)
-        );
-        // FIX: Ensure only active barbers are considered "available"
+        if (!relevantAppointments || relevantAppointments.length === 0) return [];
+        const workingBarberIds = new Set(relevantAppointments.map(app => app.barberId));
         return barbers.filter(barber => barber.status === 'active' && workingBarberIds.has(barber.id));
-    }, [barbers, appointments, today]);
+    }, [barbers, relevantAppointments]);
 
-    const todaysAppointments = useMemo(() => {
-        return appointments
-            .filter(app => app.date === today)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
-    }, [appointments, today]);
+    const homePageTitle = useMemo(() => {
+        if (!mockAppointmentsDate) return "Agendamentos";
+        
+        if (mockAppointmentsDate === today) {
+            return "Agendamentos do Dia";
+        }
+        
+        const date = new Date(mockAppointmentsDate + 'T00:00:00');
+        const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+        return `Agendamentos para ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}`;
+
+    }, [mockAppointmentsDate, today]);
 
     if (isLoading) {
         return <div className="text-center p-8">Carregando dashboard...</div>;
@@ -130,11 +140,11 @@ const HomePage: React.FC = () => {
                 className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all"
                 onClick={() => context?.setActivePage('Agenda')}
             >
-                 <h3 className="text-lg font-bold text-gray-800 mb-4">Agendamentos do Dia</h3>
+                 <h3 className="text-lg font-bold text-gray-800 mb-4">{homePageTitle}</h3>
                 <div className="max-h-96 overflow-y-auto pr-2">
-                    {todaysAppointments.length > 0 ? (
+                    {relevantAppointments.length > 0 ? (
                         <ul className="divide-y divide-gray-200">
-                            {todaysAppointments.map(app => {
+                            {relevantAppointments.map(app => {
                                 const client = clients.find(c => c.id === app.clientId);
                                 const service = services.find(s => s.id === app.serviceId);
                                 const barber = barbers.find(b => b.id === app.barberId);
@@ -160,7 +170,7 @@ const HomePage: React.FC = () => {
                     ) : (
                         <div className="text-center py-10">
                              <CalendarIcon className="w-12 h-12 mx-auto text-gray-400" />
-                            <p className="mt-4 text-gray-500">Nenhum agendamento para hoje.</p>
+                            <p className="mt-4 text-gray-500">Nenhum agendamento para este dia.</p>
                         </div>
                     )}
                 </div>
