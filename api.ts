@@ -7,8 +7,8 @@
  * and manipulates data in sessionStorage to simulate a persistent database.
  * This approach makes the mock API stateful across page reloads.
  */
-import { USERS, CLIENTS, SERVICES, BARBERS, APPOINTMENTS, TRANSACTIONS, DEFAULT_OPERATING_HOURS } from './constants';
-import { User, Client, Service, Barber, Appointment, Transaction, TransactionType, Role, Permissions, OperatingHours, BarberLeave } from './types';
+import { USERS, CLIENTS, SERVICES, APPOINTMENTS, TRANSACTIONS, DEFAULT_OPERATING_HOURS, fullAdminPermissions, defaultBarberPermissions, receptionistPermissions } from './constants';
+import { User, Client, Service, Appointment, Transaction, TransactionType, Role, Permissions, OperatingHours, BarberLeave } from './types';
 
 const NETWORK_DELAY = 300; // ms
 
@@ -39,7 +39,6 @@ const initializeData = () => {
     storage.set('api_users', USERS);
     storage.set('api_clients', CLIENTS);
     storage.set('api_services', SERVICES);
-    storage.set('api_barbers', BARBERS);
     storage.set('api_appointments', APPOINTMENTS);
     storage.set('api_transactions', TRANSACTIONS);
     storage.set('api_operating_hours', DEFAULT_OPERATING_HOURS);
@@ -69,6 +68,9 @@ export const api = {
         if (foundUser) {
             if (foundUser.role === Role.CLIENT && (foundUser as Client).status === 'inactive') {
                 throw new Error("Your account is inactive. Please contact the barbershop.");
+            }
+            if ((foundUser.role === Role.BARBER || foundUser.role === Role.ADMIN) && (foundUser as User).status === 'inactive') {
+                 throw new Error("Your account is inactive. Please contact the barbershop.");
             }
             const token = createFakeToken(foundUser);
             return { user: { ...foundUser }, token };
@@ -203,35 +205,54 @@ export const api = {
         return updatedService;
     },
     
-    // --- BARBERS / TEAM API ---
-    async getBarbers(): Promise<Barber[]> {
+    // --- USERS / TEAM API ---
+    // FIX: Add getBarbers method.
+    async getBarbers(): Promise<User[]> {
         await delay(NETWORK_DELAY);
-        return storage.get('api_barbers', []);
+        const users = storage.get<User[]>('api_users', []);
+        return users.filter(u => u.jobTitle === 'Barbeiro');
     },
-    async createBarber(barberData: Partial<Barber>): Promise<Barber> {
+    async getUsers(): Promise<User[]> {
         await delay(NETWORK_DELAY);
-        const barbers = storage.get<Barber[]>('api_barbers', []);
-        const newBarber: Barber = {
-            id: Date.now(), name: barberData.name || '', email: barberData.email || '',
-            avatarUrl: barberData.avatarUrl || `https://i.pravatar.cc/150?u=${Date.now()}`,
-            workStartTime: barberData.workStartTime || '09:00',
-            workEndTime: barberData.workEndTime || '19:00',
-            lunchStartTime: barberData.lunchStartTime || '12:00',
-            lunchEndTime: barberData.lunchEndTime || '13:00',
+        return storage.get('api_users', []);
+    },
+    async createUser(userData: Partial<User>): Promise<User> {
+        await delay(NETWORK_DELAY);
+        const users = storage.get<User[]>('api_users', []);
+
+        let permissions: Permissions;
+        switch (userData.accessProfile) {
+            case 'Admin': permissions = fullAdminPermissions; break;
+            case 'Barbeiro': permissions = defaultBarberPermissions; break;
+            case 'Recepcionista': permissions = receptionistPermissions; break;
+            default: permissions = defaultBarberPermissions;
+        }
+
+        const newUser: User = {
+            id: Date.now(),
+            name: userData.name || '',
+            email: userData.email || '',
+            avatarUrl: userData.avatarUrl || `https://i.pravatar.cc/150?u=${Date.now()}`,
+            role: userData.accessProfile === 'Admin' ? Role.ADMIN : Role.BARBER,
+            password: 'password', // Default password for first access flow
+            status: 'active',
+            jobTitle: userData.jobTitle || 'Barbeiro',
+            accessProfile: userData.accessProfile || 'Barbeiro',
+            workStartTime: userData.workStartTime || '09:00',
+            workEndTime: userData.workEndTime || '18:00',
+            lunchStartTime: userData.lunchStartTime || '12:00',
+            lunchEndTime: userData.lunchEndTime || '13:00',
+            permissions: permissions,
         };
-        storage.set('api_barbers', [...barbers, newBarber]);
-        return newBarber;
+
+        storage.set('api_users', [...users, newUser]);
+        return newUser;
     },
-    async updateBarber(id: number, updatedData: Barber): Promise<Barber> {
+    async updateUser(id: number, updatedData: User): Promise<User> {
         await delay(NETWORK_DELAY);
-        const barbers = storage.get<Barber[]>('api_barbers', []).map(b => (b.id === id ? updatedData : b));
-        storage.set('api_barbers', barbers);
+        const users = storage.get<User[]>('api_users', []).map(u => (u.id === id ? updatedData : u));
+        storage.set('api_users', users);
         return updatedData;
-    },
-    async deleteBarber(id: number): Promise<void> {
-        await delay(NETWORK_DELAY);
-        const barbers = storage.get<Barber[]>('api_barbers', []).filter(b => b.id !== id);
-        storage.set('api_barbers', barbers);
     },
 
     // --- APPOINTMENTS API ---

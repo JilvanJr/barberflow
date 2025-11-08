@@ -1,97 +1,138 @@
-
-
-import React, { useState, useCallback, useEffect, useContext } from 'react';
+import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Barber, User, Role } from '../types';
-import { PlusIcon, TrashIcon, XIcon, ShieldCheckIcon, AlertTriangleIcon, EyeIcon } from '../components/icons';
+import { User, Role } from '../types';
+import { PlusIcon, XIcon, ShieldCheckIcon, SearchIcon, ClockIcon, ImageIcon, EditIcon, EyeIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
-const BarberModal: React.FC<{
+type StatusFilterType = 'all' | 'active' | 'inactive';
+
+const FilterButton: React.FC<{
+    filter: StatusFilterType;
+    label: string;
+    currentFilter: StatusFilterType;
+    onClick: (filter: StatusFilterType) => void;
+}> = ({ filter, label, currentFilter, onClick }) => (
+    <button
+        onClick={() => onClick(filter)}
+        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${currentFilter === filter ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border'}`}
+    >
+        {label}
+    </button>
+);
+
+const NewTeamMemberModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (barber: Barber) => void;
-    onDelete: (barberId: number) => void;
-    barber: Partial<Barber> | null;
-}> = ({ isOpen, onClose, onSave, onDelete, barber }) => {
-    const [formData, setFormData] = useState<Partial<Barber>>({});
+    onSave: (user: Partial<User>) => void;
+}> = ({ isOpen, onClose, onSave }) => {
+    const [formData, setFormData] = useState<Partial<User>>({});
 
     useEffect(() => {
-        setFormData(barber || {});
-    }, [barber, isOpen]);
+        if(isOpen) {
+            // Reset form
+            setFormData({
+                name: '',
+                email: '',
+                jobTitle: 'Barbeiro',
+                accessProfile: 'Barbeiro',
+                workStartTime: '09:00',
+                workEndTime: '18:00',
+                lunchStartTime: '12:00',
+                lunchEndTime: '13:00',
+                avatarUrl: '',
+            });
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
-
+    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData as Barber);
+        onSave(formData);
     };
 
-    const handleDeleteClick = () => {
-        if (formData.id) {
-            onDelete(formData.id);
-        }
-    }
+    const handleInputChange = (field: keyof User, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void}> = ({label, value, onChange}) => (
+        <div className="relative">
+            <label className="text-sm font-medium text-gray-700">{label}</label>
+            <div className="relative mt-1">
+                <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                    type="time"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
+                />
+            </div>
+        </div>
+    );
     
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">{barber?.id ? 'Editar Profissional' : 'Novo Profissional'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-start pt-16 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                <div className="px-6 py-4 border-b">
+                     <h2 className="text-xl font-bold text-gray-800">Novo Profissional</h2>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className={labelClasses}>Nome</label>
-                        <input type="text" placeholder="Nome completo" required value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                    </div>
-                     <div>
-                        <label className={labelClasses}>Email</label>
-                        <input type="email" placeholder="exemplo@email.com" required value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                    </div>
-                     <div>
-                        <label className={labelClasses}>URL do Avatar</label>
-                        <input type="text" placeholder="https://exemplo.com/avatar.png" required value={formData.avatarUrl || ''} onChange={e => setFormData({...formData, avatarUrl: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 space-y-4">
                         <div>
-                            <label className={labelClasses}>Início da Jornada</label>
-                            <input type="time" required value={formData.workStartTime || ''} onChange={e => setFormData({...formData, workStartTime: e.target.value})} className={inputClasses} />
+                            <label className="block text-sm font-medium text-gray-700">Nome</label>
+                            <input type="text" placeholder="Nome do profissional" required value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder:italic placeholder:text-gray-400" />
                         </div>
-                        <div>
-                            <label className={labelClasses}>Fim da Jornada</label>
-                            <input type="time" required value={formData.workEndTime || ''} onChange={e => setFormData({...formData, workEndTime: e.target.value})} className={inputClasses} />
+                         <div>
+                            <label className="block text-sm font-medium text-gray-700">E-mail</label>
+                            <input type="email" placeholder="E-mail do profissional (será utilizado para acesso)" required value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder:italic placeholder:text-gray-400" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Função</label>
+                                <select value={formData.jobTitle || 'Barbeiro'} onChange={e => handleInputChange('jobTitle', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option>Barbeiro</option>
+                                    <option>Recepcionista</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Perfil de acesso</label>
+                                <select value={formData.accessProfile || 'Barbeiro'} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option>Admin</option>
+                                    <option>Barbeiro</option>
+                                    <option>Recepcionista</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {formData.accessProfile !== 'Admin' && (
+                            <>
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Jornada</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
+                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Almoço</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                    <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} />
+                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="border-t pt-4">
+                           <button type="button" className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <ImageIcon className="w-5 h-5 text-gray-500"/>
+                                Importar foto
+                           </button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={labelClasses}>Início do Almoço</label>
-                            <input type="time" required value={formData.lunchStartTime || ''} onChange={e => setFormData({...formData, lunchStartTime: e.target.value})} className={inputClasses} />
-                        </div>
-                        <div>
-                            <label className={labelClasses}>Fim do Almoço</label>
-                            <input type="time" required value={formData.lunchEndTime || ''} onChange={e => setFormData({...formData, lunchEndTime: e.target.value})} className={inputClasses} />
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-6 border-t mt-6">
-                        <div>
-                             {barber?.id && (
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteClick}
-                                    className="text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 px-4 py-2"
-                                >
-                                    <TrashIcon className="w-5 h-5"/>
-                                    <span>Excluir</span>
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex space-x-4">
-                            <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                            <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
-                        </div>
+                    <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                        <button type="button" onClick={onClose} className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Cancelar</button>
+                        <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-sm">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -99,37 +140,135 @@ const BarberModal: React.FC<{
     );
 };
 
-const ConfirmationModal: React.FC<{
+const TeamMemberDetailsModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-    message: string;
-}> = ({ isOpen, onClose, onConfirm, title, message }) => {
-    if (!isOpen) return null;
+    onSave: (user: User) => void;
+    user: User | null;
+}> = ({ isOpen, onClose, onSave, user }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState<Partial<User>>({});
+
+    useEffect(() => {
+        if(user) {
+            setFormData(user);
+        }
+        setIsEditing(false); // Reset editing state when modal opens or user changes
+    }, [user, isOpen]);
+
+    if (!isOpen || !user) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSave(formData as User);
+        setIsEditing(false);
+    };
+    
+    const handleInputChange = (field: keyof User, value: string | boolean) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        if (user) setFormData(user);
+    }
+
+    const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void}> = ({label, value, onChange}) => (
+        <div className="relative">
+             <label className="text-sm font-medium text-gray-700">{label}</label>
+            <div className="relative mt-1">
+                <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                    type="time"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500 text-gray-900"
+                />
+            </div>
+        </div>
+    );
+
+    const toggleBgClass = formData.status === 'active' 
+        ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
+        : 'bg-gray-200';
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                    <AlertTriangleIcon className="h-6 w-6 text-red-600" />
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-start pt-16 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                <div className="px-6 py-4 border-b flex justify-between items-center">
+                     <h2 className="text-xl font-bold text-gray-800">Detalhes do Profissional</h2>
+                    {!isEditing && <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"><EditIcon className="w-4 h-4" /> Editar</button>}
+                    {isEditing && <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-md">Editando...</span>}
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
-                <div className="flex justify-center space-x-4">
-                    <button 
-                        type="button" 
-                        onClick={onClose} 
-                        className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
-                        Cancelar
-                    </button>
-                    <button 
-                        type="button" 
-                        onClick={onConfirm} 
-                        className="px-6 py-2.5 w-full bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
-                        Sim, Excluir
-                    </button>
-                </div>
+                 <form onSubmit={handleSubmit}>
+                    <div className="p-6 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Nome</label>
+                            <input type="text" disabled={!isEditing} value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500" />
+                        </div>
+                         <div>
+                            <label className="block text-sm font-medium text-gray-700">E-mail</label>
+                            <input type="email" disabled value={formData.email || ''} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 sm:text-sm" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Função</label>
+                                <select disabled={!isEditing} value={formData.jobTitle || ''} onChange={e => handleInputChange('jobTitle', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                                    <option>Barbeiro</option>
+                                    <option>Recepcionista</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Perfil de acesso</label>
+                                <select disabled={!isEditing} value={formData.accessProfile || ''} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                                    <option>Admin</option>
+                                    <option>Barbeiro</option>
+                                    <option>Recepcionista</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {formData.accessProfile !== 'Admin' && (
+                            <>
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Jornada</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
+                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Almoço</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                    <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} />
+                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        
+                         <div className="border-t pt-4">
+                             <label htmlFor="status" className={`flex items-center justify-between ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                                <span className="text-sm font-medium text-gray-700">Status</span>
+                                 <div className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${toggleBgClass}`}>
+                                    <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${formData.status === 'active' ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </div>
+                            </label>
+                             <input id="status" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
+                         </div>
+                    </div>
+                    <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                         {isEditing ? (
+                            <div className="flex w-full space-x-3">
+                                <button type="button" onClick={handleCancel} className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Cancelar</button>
+                                <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-sm">Salvar</button>
+                            </div>
+                        ) : (
+                             <button type="button" onClick={onClose} className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Fechar</button>
+                        )}
+                    </div>
+                </form>
             </div>
         </div>
     );
@@ -138,137 +277,124 @@ const ConfirmationModal: React.FC<{
 
 const TeamPage: React.FC = () => {
     const context = useContext(AppContext);
-    const [barbers, setBarbers] = useState<Barber[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingBarber, setEditingBarber] = useState<Partial<Barber> | null>(null);
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    const [barberToDeleteId, setBarberToDeleteId] = useState<number | null>(null);
+    const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
     }
-    const { currentUser, users, setActivePage, setSelectedUserIdForPermissions } = context;
+    const { currentUser, users, setUsers, setActivePage, setSelectedUserIdForPermissions, showToast } = context;
     const currentUserPermissions = currentUser.permissions;
 
-    const fetchBarbers = useCallback(async () => {
+    const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await api.getBarbers();
-            setBarbers(data);
+            // In a real app, this would be api.getUsers(), but we get it from context
+            // For now, just end loading
         } catch (error) {
-            console.error("Failed to fetch barbers", error);
+            console.error("Failed to fetch users", error);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchBarbers();
-    }, [fetchBarbers]);
+        fetchUsers();
+    }, [fetchUsers]);
 
-    const handlePermissionsClick = (barber: Barber) => {
-        if (!barber.email) {
-            alert("Este barbeiro não tem um e-mail associado e não pode ter permissões gerenciadas.");
-            return;
-        }
-        const user = users.find(u => u.email === barber.email);
-        if (user) {
-            setSelectedUserIdForPermissions(user.id);
-            setActivePage('Configurações');
-        } else {
-            alert("Não foi possível encontrar um usuário correspondente para este barbeiro.");
-        }
-    };
+    const teamMembers = useMemo(() => {
+        return users
+            .filter(user => {
+                if (statusFilter === 'all') return true;
+                return user.status === statusFilter;
+            })
+            .filter(user => 
+                user.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+    }, [users, statusFilter, searchTerm]);
 
-    const handleAddNew = () => {
-        setEditingBarber({name: '', email: '', avatarUrl: '', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00'});
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (barber: Barber) => {
-        setEditingBarber(barber);
-        setIsModalOpen(true);
+    const handlePermissionsClick = (user: User) => {
+        setSelectedUserIdForPermissions(user.id);
+        setActivePage('Configurações');
     };
     
-    const handleDelete = (barberId: number) => {
-        setIsModalOpen(false); // Close edit modal first
-        setBarberToDeleteId(barberId);
-        setIsConfirmModalOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        if (barberToDeleteId) {
-            try {
-                await api.deleteBarber(barberToDeleteId);
-                fetchBarbers();
-            } catch (error) {
-                console.error("Failed to delete barber", error);
-                alert("Falha ao excluir o membro da equipe.");
-            } finally {
-                setIsConfirmModalOpen(false);
-                setBarberToDeleteId(null);
-            }
-        }
-    };
-
-    const handleSave = useCallback(async (barberToSave: Barber) => {
-        if (barberToSave.id) {
-            await api.updateBarber(barberToSave.id, barberToSave);
-        } else {
-            await api.createBarber(barberToSave);
-        }
-        setIsModalOpen(false);
-        fetchBarbers();
-    }, [fetchBarbers]);
-
-    const getRoleName = (user: User | undefined) => {
-        if (!user) return 'Membro';
-        if (user.name.toLowerCase().includes('recepcionista')) return 'Recepcionista';
-        switch (user.role) {
-            case Role.ADMIN: return 'Admin';
-            case Role.BARBER: return 'Barbeiro';
-            default: return 'Membro';
-        }
+    const handleViewDetails = (user: User) => {
+        setSelectedUser(user);
+        setIsDetailsModalOpen(true);
     }
+    
+    const handleSave = useCallback(async (userToSave: Partial<User>) => {
+        try {
+            if (userToSave.id) { // UPDATE
+                const updatedUser = await api.updateUser(userToSave.id, userToSave as User);
+                setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+                setIsDetailsModalOpen(false);
+                showToast('Profissional atualizado com sucesso!', 'success');
+            } else { // CREATE
+                 const newUser = await api.createUser(userToSave);
+                 setUsers(prev => [...prev, newUser]);
+                 setIsCreateModalOpen(false);
+                 showToast('Novo profissional salvo com sucesso!', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to save user', error);
+            showToast('Falha ao salvar profissional.', 'error');
+        }
+    }, [setUsers, showToast]);
 
-    if (isLoading) {
+    if (isLoading && users.length === 0) {
         return <div className="text-center p-8">Carregando equipe...</div>;
     }
 
     return (
         <div>
-            <div className="flex justify-end items-center mb-6">
-                {currentUserPermissions?.canCreateTeamMember && (
-                    <button onClick={handleAddNew} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-                        <PlusIcon className="w-5 h-5" />
-                        <span>Novo Profissional</span>
-                    </button>
-                )}
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center space-x-2">
+                    <FilterButton filter="all" label="Todos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="active" label="Ativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                    <FilterButton filter="inactive" label="Inativos" currentFilter={statusFilter} onClick={setStatusFilter} />
+                </div>
+                <div className="flex items-center space-x-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Buscar profissional..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 placeholder:italic placeholder:text-gray-400"
+                        />
+                        <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                    {currentUserPermissions?.canCreateTeamMember && (
+                        <button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                            <PlusIcon className="w-5 h-5" />
+                            <span>Novo Profissional</span>
+                        </button>
+                    )}
+                </div>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {barbers.map(barber => {
-                    const user = users.find(u => u.email === barber.email);
-                    return (
-                        <div key={barber.id} className="bg-white rounded-lg shadow-sm border p-6 flex flex-col items-center text-center">
-                            <img src={barber.avatarUrl} alt={barber.name} className="w-24 h-24 rounded-full mb-4" />
-                            <h3 className="text-xl font-bold text-gray-900">{barber.name}</h3>
-                            <p className="text-sm text-gray-500 mb-4">{getRoleName(user)}</p>
+                {teamMembers.map(user => (
+                        <div key={user.id} onClick={() => handleViewDetails(user)} className="bg-white rounded-lg shadow-sm border p-6 flex flex-col items-center text-center cursor-pointer hover:shadow-md hover:border-blue-400 transition-shadow">
+                            <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mb-4" />
+                            <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+                            <p className="text-sm text-gray-500 mb-4">{user.jobTitle}</p>
                             
-                            <div className="flex space-x-2">
-                                <button 
-                                    onClick={() => handleEdit(barber)} 
-                                    title="Ver Detalhes"
-                                    className="text-gray-500 hover:text-blue-600 p-2 bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <EyeIcon className="w-5 h-5"/>
-                                </button>
-                                {currentUserPermissions.canEditTeamMember && (
-                                    <button 
-                                        onClick={() => handlePermissionsClick(barber)} 
-                                        title="Permissões"
-                                        className="text-gray-500 hover:text-blue-600 p-2 bg-gray-100 rounded-full transition-colors"
+                            <div className="mt-auto flex space-x-2">
+                                <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                                </span>
+                                {currentUser.role === Role.ADMIN && (
+                                     <button 
+                                        onClick={(e) => { e.stopPropagation(); handlePermissionsClick(user); }}
+                                        title="Gerenciar Permissões"
+                                        className="text-gray-400 hover:text-blue-600 transition-colors"
                                     >
                                         <ShieldCheckIcon className="w-5 h-5"/>
                                     </button>
@@ -276,23 +402,20 @@ const TeamPage: React.FC = () => {
                             </div>
                         </div>
                     )
-                })}
+                )}
             </div>
-
-            <BarberModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                onSave={handleSave} 
-                onDelete={handleDelete}
-                barber={editingBarber} 
+            
+            <NewTeamMemberModal 
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSave={handleSave}
             />
             
-            <ConfirmationModal
-                isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={confirmDelete}
-                title="Confirmar Exclusão"
-                message="Tem certeza que deseja excluir este membro da equipe? Esta ação não pode ser desfeita."
+            <TeamMemberDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                onSave={handleSave}
+                user={selectedUser}
             />
         </div>
     );

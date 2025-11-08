@@ -207,6 +207,9 @@ const ServiceDetailsModal: React.FC<{
 
     const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-200 disabled:text-gray-500";
     const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const toggleBgClass = formData.status === 'active' 
+        ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
+        : 'bg-gray-200';
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
@@ -231,18 +234,14 @@ const ServiceDetailsModal: React.FC<{
                         <input type="number" name="duration" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
                         <FormError message={errors.duration} />
                     </div>
-                    <div>
-                        <label className={labelClasses}>Situação</label>
-                        {!isEditing ? (
-                             <span className={`px-2.5 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${formData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                {formData.status === 'active' ? 'Ativo' : 'Inativo'}
-                            </span>
-                        ) : (
-                            <select name="status" value={formData.status || ''} onChange={e => handleInputChange('status', e.target.value)} onBlur={handleBlur} className={inputClasses}>
-                                <option value="active">Ativo</option>
-                                <option value="inactive">Inativo</option>
-                            </select>
-                        )}
+                    <div className="border-t pt-4">
+                         <label htmlFor="service-status-toggle" className={`flex items-center justify-between ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                            <span className="text-sm font-medium text-gray-700">Status</span>
+                             <div className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${toggleBgClass}`}>
+                                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${formData.status === 'active' ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </div>
+                        </label>
+                         <input id="service-status-toggle" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                     </div>
                 </div>
                 <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200 space-x-3">
@@ -329,7 +328,7 @@ const ServicesPage: React.FC = () => {
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
     }
-    const { currentUser } = context;
+    const { currentUser, showToast } = context;
     const currentUserPermissions = currentUser.permissions;
 
     const fetchServices = useCallback(async () => {
@@ -402,10 +401,11 @@ const ServicesPage: React.FC = () => {
         if (serviceToToggle) {
             try {
                 await api.updateService(serviceToToggle.id!, serviceToToggle);
+                showToast('Status do serviço atualizado com sucesso!', 'success');
                 fetchServices();
             } catch (error) {
                 console.error("Failed to update service status", error);
-                alert('Falha ao atualizar o status do serviço.');
+                showToast('Falha ao atualizar o status do serviço.', 'error');
             } finally {
                 setIsConfirmModalOpen(false);
                 setServiceToToggle(null);
@@ -423,19 +423,21 @@ const ServicesPage: React.FC = () => {
                     setIsConfirmModalOpen(true);
                 } else {
                     await api.updateService(serviceToSave.id, serviceToSave);
+                    showToast('Serviço atualizado com sucesso!', 'success');
                     setIsDetailsModalOpen(false);
                     fetchServices();
                 }
             } else { // CREATE
                 await api.createService(serviceToSave);
+                showToast('Serviço salvo com sucesso!', 'success');
                 setIsCreateModalOpen(false);
                 fetchServices();
             }
         } catch(error) {
              console.error("Failed to save service", error);
-            alert("Falha ao salvar o serviço.");
+            showToast("Falha ao salvar o serviço.", 'error');
         }
-    }, [services, fetchServices]);
+    }, [services, fetchServices, showToast]);
 
     const SortableHeader: React.FC<{ columnKey: keyof Service; title: string; }> = ({ columnKey, title }) => {
         const isSorted = sortConfig.key === columnKey;

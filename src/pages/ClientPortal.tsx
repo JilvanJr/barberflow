@@ -58,7 +58,7 @@ const BookingModal: React.FC<{
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Selecione um profissional</label>
                         <div className="flex space-x-4">
-                            {barbers.map(barber => (
+                            {barbers.filter(b => b.status === 'active').map(barber => (
                                 <div key={barber.id} onClick={() => setSelectedBarber(barber)} className={`text-center cursor-pointer p-2 rounded-lg border-2 ${selectedBarber?.id === barber.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-100'}`}>
                                     <img src={barber.avatarUrl} alt={barber.name} className="w-16 h-16 rounded-full mx-auto" />
                                     <p className="mt-2 text-sm font-semibold">{barber.name}</p>

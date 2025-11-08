@@ -1,4 +1,4 @@
-import { Role, User, Client, Service, Barber, Appointment, Transaction, TransactionType, Permissions, OperatingHours } from './types';
+import { Role, User, Client, Service, Appointment, Transaction, TransactionType, Permissions, OperatingHours } from './types';
 
 const getTodayLocalISOString = () => {
     const today = new Date();
@@ -90,19 +90,12 @@ export const DEFAULT_OPERATING_HOURS: OperatingHours = {
 
 
 export const USERS: User[] = [
-  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', role: Role.ADMIN, password: 'admin', permissions: fullAdminPermissions },
-  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', role: Role.BARBER, password: 'barber', permissions: defaultBarberPermissions },
-  { id: 3, name: 'Recepcionista Ana', email: 'recepcao@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', role: Role.BARBER, password: 'recepcao', permissions: receptionistPermissions },
-  { id: 4, name: 'Barbeiro 1', email: 'b1@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber1', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions },
-  { id: 5, name: 'Barbeiro 3', email: 'b3@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber3', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions },
-  { id: 6, name: 'Barbeiro 4', email: 'b4@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber4', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions },
-];
-
-export const BARBERS: Barber[] = [
-  { id: 1, name: 'Barbeiro 1', avatarUrl: 'https://i.pravatar.cc/150?u=barber1', email: 'b1@email.com', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 2, name: 'Barbeiro 2', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', email: 'barber@barberflow.com', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 3, name: 'Barbeiro 3', avatarUrl: 'https://i.pravatar.cc/150?u=barber3', email: 'b3@email.com', workStartTime: '09:00', workEndTime: '15:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 4, name: 'Barbeiro 4', avatarUrl: 'https://i.pravatar.cc/150?u=barber4', email: 'b4@email.com', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '13:00', lunchEndTime: '14:00' },
+  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', role: Role.ADMIN, password: 'admin', permissions: fullAdminPermissions, status: 'active', jobTitle: 'Admin', accessProfile: 'Admin', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', role: Role.BARBER, password: 'barber', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 3, name: 'Recepcionista Ana', email: 'recepcao@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', role: Role.BARBER, password: 'recepcao', permissions: receptionistPermissions, status: 'active', jobTitle: 'Recepcionista', accessProfile: 'Recepcionista', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 4, name: 'Barbeiro 1', email: 'b1@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber1', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 5, name: 'Barbeiro 3', email: 'b3@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber3', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '15:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 6, name: 'Barbeiro 4', email: 'b4@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber4', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'inactive', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '13:00', lunchEndTime: '14:00' },
 ];
 
 export const CLIENTS: Client[] = [
@@ -118,21 +111,53 @@ export const CLIENTS: Client[] = [
 ];
 
 export const SERVICES: Service[] = [
-  { id: 1, name: 'Barba', price: 30.00, duration: 20, status: 'active' },
-  { id: 2, name: 'Corte', price: 50.00, duration: 30, status: 'active' },
-  { id: 3, name: 'Corte + Barba', price: 80.00, duration: 50, status: 'active' },
-  { id: 4, name: 'Pezinho', price: 10.00, duration: 15, status: 'active' },
-  { id: 5, name: 'Relaxamento', price: 70.00, duration: 60, status: 'inactive' },
-  { id: 6, name: 'Sobrancelha', price: 10.00, duration: 15, status: 'active' },
+  { id: 1, name: 'Barba', price: 70, duration: 40, status: 'active' },
+  { id: 2, name: 'Corte', price: 70, duration: 40, status: 'active' },
+  { id: 3, name: 'Corte e Barba', price: 125, duration: 60, status: 'active' },
+  { id: 4, name: 'Corte (tamanho único-careca)', price: 50, duration: 30, status: 'active' },
+  { id: 5, name: 'Corte Infantil', price: 70, duration: 40, status: 'active' },
+  { id: 6, name: 'Corte (tamanho único-careca)/Barba', price: 95, duration: 60, status: 'active' },
+  { id: 7, name: 'Corte/Sobrancelha', price: 90, duration: 40, status: 'active' },
+  { id: 8, name: 'Corte/barba/sobrancelha', price: 145, duration: 60, status: 'active' },
+  { id: 9, name: 'Corte e barba c/ barboterapia', price: 155, duration: 60, status: 'active' },
+  { id: 10, name: 'Acabamento (contorno)', price: 30, duration: 10, status: 'active' },
+  { id: 11, name: 'Acabamento (contorno) c/ barba', price: 90, duration: 40, status: 'active' },
+  { id: 12, name: 'Acabamento (contorno) c/ corte', price: 90, duration: 40, status: 'active' },
+  { id: 13, name: 'Barba c/ espuma quente', price: 90, duration: 40, status: 'active' },
+  { id: 14, name: 'Barba c/barboterapia', price: 100, duration: 60, status: 'active' },
+  { id: 15, name: 'Combo Elemento', price: 270, duration: 90, status: 'active' },
+  { id: 16, name: 'Combo Origem', price: 180, duration: 60, status: 'active' },
+  { id: 17, name: 'Combo Soberano', price: 300, duration: 100, status: 'active' },
+  { id: 18, name: 'Corte (Cabelo Afro)', price: 80, duration: 60, status: 'active' },
+  { id: 19, name: 'Corte (cabelo longo)', price: 90, duration: 80, status: 'active' },
+  { id: 20, name: 'Corte (tamanho único-careca) + barba c/ barboterapia', price: 125, duration: 60, status: 'active' },
+  { id: 21, name: 'Corte (tamanho único-careca) + barba c/ barboterapia e hidratação', price: 155, duration: 60, status: 'active' },
+  { id: 22, name: 'Corte (tamanho único-careca) c/ espuma quente', price: 70, duration: 40, status: 'active' },
+  { id: 23, name: 'Corte (tamanho ùnico-careca) e barba c/ espuma quente', price: 125, duration: 60, status: 'active' },
+  { id: 24, name: 'Corte (tamanho único-careca)/Barba + sobrancelha', price: 115, duration: 60, status: 'active' },
+  { id: 25, name: 'Corte c/ hidratação', price: 100, duration: 60, status: 'active' },
+  { id: 26, name: 'Corte c/ Progressiva', price: 220, duration: 80, status: 'active' },
+  { id: 27, name: 'Corte e Barba c/ espuma quente', price: 150, duration: 110, status: 'active' },
+  { id: 28, name: 'Depilação Auricular (cera)', price: 30, duration: 10, status: 'active' },
+  { id: 29, name: 'Depilação Nasal (cera)', price: 30, duration: 10, status: 'active' },
+  { id: 30, name: 'Depilação nasal e auricular (cera)', price: 50, duration: 30, status: 'active' },
+  { id: 31, name: 'Freestyle', price: 20, duration: 10, status: 'active' },
+  { id: 32, name: 'Freestyle (feminino)', price: 50, duration: 30, status: 'active' },
+  { id: 33, name: 'Hidratação', price: 40, duration: 10, status: 'active' },
+  { id: 34, name: 'Limpeza Facial', price: 40, duration: 10, status: 'active' },
+  { id: 35, name: 'Penteado', price: 50, duration: 20, status: 'active' },
+  { id: 36, name: 'Progressiva', price: 150, duration: 40, status: 'active' },
+  { id: 37, name: 'Selagem', price: 130, duration: 40, status: 'active' },
+  { id: 38, name: 'Sobrancelha', price: 30, duration: 10, status: 'active' },
 ];
 
 export const APPOINTMENTS: Appointment[] = [
-    { id: 1, barberId: 1, clientId: 1, serviceId: 2, startTime: '09:30', endTime: '10:00', date: today },
-    { id: 2, barberId: 2, clientId: 2, serviceId: 3, startTime: '10:00', endTime: '10:50', date: today },
-    { id: 3, barberId: 3, clientId: 3, serviceId: 1, startTime: '11:30', endTime: '11:50', date: today },
-    { id: 4, barberId: 1, clientId: 4, serviceId: 5, startTime: '14:00', endTime: '15:00', date: today },
-    { id: 5, barberId: 4, clientId: 5, serviceId: 6, startTime: '16:00', endTime: '16:15', date: today },
-    { id: 6, barberId: 1, clientId: 2, serviceId: 2, startTime: '15:30', endTime: '16:00', date: today },
+    { id: 1, barberId: 1, clientId: 1, serviceId: 2, startTime: '09:30', endTime: '10:10', date: today },
+    { id: 2, barberId: 2, clientId: 2, serviceId: 3, startTime: '10:00', endTime: '11:00', date: today },
+    { id: 3, barberId: 3, clientId: 3, serviceId: 1, startTime: '11:30', endTime: '12:10', date: today },
+    { id: 4, barberId: 1, clientId: 4, serviceId: 4, startTime: '14:00', endTime: '14:30', date: today },
+    { id: 5, barberId: 4, clientId: 5, serviceId: 38, startTime: '16:00', endTime: '16:10', date: today },
+    { id: 6, barberId: 1, clientId: 2, serviceId: 2, startTime: '15:30', endTime: '16:10', date: today },
 ];
 
 export const TRANSACTIONS: Transaction[] = [

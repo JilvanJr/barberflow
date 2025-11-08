@@ -1,5 +1,3 @@
-
-
 import React, { useState, createContext, useMemo, useEffect, useCallback, useContext } from 'react';
 import { Role } from './types';
 import type { User, Client } from './types';
@@ -7,8 +5,15 @@ import Dashboard from './components/Dashboard';
 import AuthPage from './pages/AuthPage';
 import ClientPortal from './pages/ClientPortal';
 import { api } from './api';
+import Toast from './components/Toast';
 
 export type Page = 'Home' | 'Agenda' | 'Clientes' | 'Serviços' | 'Caixa' | 'Equipe' | 'Configurações';
+
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error';
+}
 
 interface AppContextType {
   activePage: Page;
@@ -22,6 +27,7 @@ interface AppContextType {
   isLoading: boolean;
   selectedUserIdForPermissions: number | null;
   setSelectedUserIdForPermissions: React.Dispatch<React.SetStateAction<number | null>>;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -59,6 +65,14 @@ const App: React.FC = () => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'));
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUserIdForPermissions, setSelectedUserIdForPermissions] = useState<number | null>(null);
+  const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const handleLogin = useCallback((user: User | Client, authToken: string) => {
     localStorage.setItem('authToken', authToken);
@@ -103,6 +117,7 @@ const App: React.FC = () => {
     isLoading,
     selectedUserIdForPermissions,
     setSelectedUserIdForPermissions,
+    showToast,
   }), [currentUser, handleLogout, users, token, isLoading, selectedUserIdForPermissions]);
 
   if (isLoading) {
@@ -115,6 +130,12 @@ const App: React.FC = () => {
 
   return (
     <AppContext.Provider value={contextValue}>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        show={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
       {!currentUser ? (
         <AuthPage onLogin={handleLogin} />
       ) : currentUser.role === Role.CLIENT ? (

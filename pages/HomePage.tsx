@@ -59,7 +59,8 @@ const HomePage: React.FC = () => {
         const workingBarberIds = new Set(
             appointments.filter(app => app.date === today).map(app => app.barberId)
         );
-        return barbers.filter(barber => workingBarberIds.has(barber.id));
+        // FIX: Ensure only active barbers are considered "available"
+        return barbers.filter(barber => barber.status === 'active' && workingBarberIds.has(barber.id));
     }, [barbers, appointments, today]);
 
     const todaysAppointments = useMemo(() => {

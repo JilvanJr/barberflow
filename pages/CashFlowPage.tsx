@@ -172,7 +172,7 @@ const CashFlowPage: React.FC = () => {
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
         return <div className="text-center p-8">Acesso não autorizado.</div>;
     }
-    const { currentUser } = context;
+    const { currentUser, showToast } = context;
     const currentUserPermissions = currentUser.permissions;
 
     const fetchTransactions = useCallback(async () => {
@@ -250,10 +250,15 @@ const CashFlowPage: React.FC = () => {
 
     const handleSave = useCallback(async (newTransaction: Omit<Transaction, 'id' | 'date' | 'paymentStatus' | 'completedBy'>) => {
         if (!currentUser) return;
-        await api.createTransaction(newTransaction, currentUser.name);
-        setIsModalOpen(false);
-        fetchTransactions();
-    }, [fetchTransactions, currentUser]);
+        try {
+            await api.createTransaction(newTransaction, currentUser.name);
+            showToast('Transação adicionada com sucesso!', 'success');
+            setIsModalOpen(false);
+            fetchTransactions();
+        } catch (error) {
+            showToast('Falha ao adicionar transação.', 'error');
+        }
+    }, [fetchTransactions, currentUser, showToast]);
     
     const handleOpenPaymentModal = (transaction: Transaction) => {
         setSelectedTransaction(transaction);
@@ -262,17 +267,27 @@ const CashFlowPage: React.FC = () => {
 
     const handleSavePayment = async (transactionId: string, newMethod: string) => {
         if (!currentUser) return;
-        await api.confirmPayment(transactionId, newMethod, currentUser.name);
-        setIsPaymentModalOpen(false);
-        setSelectedTransaction(null);
-        fetchTransactions();
+        try {
+            await api.confirmPayment(transactionId, newMethod, currentUser.name);
+            showToast('Pagamento confirmado com sucesso!', 'success');
+            setIsPaymentModalOpen(false);
+            setSelectedTransaction(null);
+            fetchTransactions();
+        } catch (error) {
+            showToast('Falha ao confirmar pagamento.', 'error');
+        }
     };
 
     const handleDeleteTransaction = async (transactionId: string) => {
-        await api.deleteTransaction(transactionId);
-        setIsPaymentModalOpen(false);
-        setSelectedTransaction(null);
-        fetchTransactions();
+        try {
+            await api.deleteTransaction(transactionId);
+            showToast('Ordem excluída com sucesso!', 'success');
+            setIsPaymentModalOpen(false);
+            setSelectedTransaction(null);
+            fetchTransactions();
+        } catch (error) {
+            showToast('Falha ao excluir ordem.', 'error');
+        }
     };
 
     const SortableHeader: React.FC<{ columnKey: keyof Transaction; title: string; }> = ({ columnKey, title }) => {

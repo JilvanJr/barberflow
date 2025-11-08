@@ -41,7 +41,17 @@ export interface User {
   role: Role.ADMIN | Role.BARBER;
   password?: string;
   permissions: Permissions;
+  status: 'active' | 'inactive';
+  jobTitle: string; // e.g., 'Barbeiro', 'Recepcionista'
+  accessProfile: 'Admin' | 'Barbeiro' | 'Recepcionista';
+  workStartTime: string; // "HH:MM"
+  workEndTime: string; // "HH:MM"
+  lunchStartTime: string; // "HH:MM"
+  lunchEndTime: string; // "HH:MM"
 }
+
+// FIX: Define and export Barber type as an alias for User.
+export type Barber = User;
 
 export interface Client {
   id: number;
@@ -61,17 +71,6 @@ export interface Service {
   price: number;
   duration: number; // in minutes
   status: 'active' | 'inactive';
-}
-
-export interface Barber {
-  id: number;
-  name: string;
-  avatarUrl: string;
-  email?: string;
-  workStartTime?: string; // "HH:MM"
-  workEndTime?: string; // "HH:MM"
-  lunchStartTime?: string; // "HH:MM"
-  lunchEndTime?: string; // "HH:MM"
 }
 
 export interface Appointment {

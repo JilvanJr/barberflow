@@ -145,10 +145,27 @@ const AppointmentModal: React.FC<{
     const [availableTimes, setAvailableTimes] = useState<string[]>([]);
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+    const [serviceSearch, setServiceSearch] = useState('');
+    const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
     const isEditing = !!initialData?.id;
+
+    const barbersForDropdown = useMemo(() => {
+        if (!isEditing) {
+            return barbers.filter(barber => barber.status === 'active');
+        }
+        return barbers.filter(barber => {
+            if (barber.status === 'active') {
+                return true;
+            }
+            if (barber.id === initialData?.barberId) {
+                return true;
+            }
+            return false;
+        });
+    }, [barbers, isEditing, initialData]);
 
     const resetModalState = useCallback(() => {
         const isEditingMode = !!initialData?.id;
@@ -167,6 +184,13 @@ const AppointmentModal: React.FC<{
              setClientSearch('');
         }
 
+        if (isEditingMode && initialData?.serviceId) {
+            const service = services.find(s => s.id === initialData.serviceId);
+            setServiceSearch(service ? `${service.name} (${service.duration} min)` : '');
+        } else {
+            setServiceSearch('');
+        }
+
         if (isEditingMode) {
             setStep(4);
         } else {
@@ -176,8 +200,9 @@ const AppointmentModal: React.FC<{
 
         setAvailableTimes([]);
         setIsClientDropdownOpen(false);
+        setIsServiceDropdownOpen(false);
         setIsSaving(false);
-    }, [initialData, clients]);
+    }, [initialData, clients, services]);
 
     useEffect(() => {
         if (isOpen) {
@@ -270,6 +295,18 @@ const AppointmentModal: React.FC<{
             setStep(4);
         }
     }, [isEditing, appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointmentData.startTime]);
+
+    const filteredClients = useMemo(() => (clientSearch
+        ? clients.filter(c => c.status === 'active' && c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+        : clients.filter(c => c.status === 'active')
+    ).sort((a, b) => a.name.localeCompare(b.name)), [clients, clientSearch]);
+
+    const filteredServices = useMemo(() => {
+        const searchInput = appointmentData.serviceId ? '' : serviceSearch; // Don't filter if an ID is already set
+        return services
+            .filter(s => s.status === 'active' && s.name.toLowerCase().includes(searchInput.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [services, serviceSearch, appointmentData.serviceId]);
     
     if (!isOpen) return null;
 
@@ -293,11 +330,12 @@ const AppointmentModal: React.FC<{
         setClientSearch(client.name);
         setIsClientDropdownOpen(false);
     }
-    
-    const filteredClients = (clientSearch
-        ? clients.filter(c => c.status === 'active' && c.name.toLowerCase().includes(clientSearch.toLowerCase()))
-        : clients.filter(c => c.status === 'active')
-    ).sort((a, b) => a.name.localeCompare(b.name));
+
+    const handleServiceSelect = (service: Service) => {
+        setAppointmentData({ ...appointmentData, serviceId: service.id.toString(), startTime: '' });
+        setServiceSearch(`${service.name} (${service.duration} min)`);
+        setIsServiceDropdownOpen(false);
+    }
     
     const stepHeaders: { [key: number]: string } = {
         1: "Passo 1 de 4: Selecione o Serviço",
@@ -319,12 +357,39 @@ const AppointmentModal: React.FC<{
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Step 1: Service */}
-                    <div style={{ display: step >= 1 ? 'block' : 'none' }}>
+                    <div className="relative" style={{ display: step >= 1 ? 'block' : 'none' }}>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Serviço</label>
-                        <select required value={appointmentData.serviceId} onChange={e => setAppointmentData({...appointmentData, serviceId: e.target.value, startTime: ''})} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                            <option value="">Selecione o Serviço</option>
-                            {services.filter(s => s.status === 'active').map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>)}
-                        </select>
+                        <input
+                            type="text"
+                            required
+                            placeholder="Digite para buscar o serviço..."
+                            value={serviceSearch}
+                            onChange={e => {
+                                setServiceSearch(e.target.value);
+                                setIsServiceDropdownOpen(true);
+                                setAppointmentData({ ...appointmentData, serviceId: '', startTime: '' });
+                            }}
+                            onFocus={() => setIsServiceDropdownOpen(true)}
+                            onBlur={() => setTimeout(() => setIsServiceDropdownOpen(false), 150)}
+                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        />
+                        {isServiceDropdownOpen && (
+                            <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg">
+                                {filteredServices.length > 0 ? (
+                                    filteredServices.map(service => (
+                                        <div
+                                            key={service.id}
+                                            onMouseDown={() => handleServiceSelect(service)}
+                                            className="p-2.5 hover:bg-gray-100 cursor-pointer text-sm text-gray-900"
+                                        >
+                                            {service.name} ({service.duration} min)
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-2.5 text-sm text-gray-500">Nenhum serviço encontrado</div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Step 2: Date & Barber */}
@@ -356,7 +421,11 @@ const AppointmentModal: React.FC<{
                             <label className="block mb-2 text-sm font-medium text-gray-700">Barbeiro</label>
                             <select required value={appointmentData.barberId} onChange={e => setAppointmentData({...appointmentData, barberId: e.target.value, startTime: ''})} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                                 <option value="">Selecione o Barbeiro</option>
-                                {barbers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                {barbersForDropdown.map(b => (
+                                    <option key={b.id} value={b.id} disabled={b.status === 'inactive'}>
+                                        {b.name}{b.status === 'inactive' ? ' (Inativo)' : ''}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -531,6 +600,8 @@ const AgendaPage: React.FC = () => {
         fetchData();
     }, []);
 
+    const activeBarbers = useMemo(() => barbers.filter(b => b.status === 'active'), [barbers]);
+
     const timeSlots = useMemo(() => Array.from({ length: 22 }, (_, i) => { // 9:00 to 19:30
         const hour = 9 + Math.floor(i / 2);
         const minute = (i % 2) * 30;
@@ -685,8 +756,8 @@ const AgendaPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md">
                 <div className="flex border-b border-gray-200">
                     <div className="w-24 flex-shrink-0"></div> {/* Time column spacer */}
-                    <div className="flex-1 grid" style={{gridTemplateColumns: `repeat(${barbers.length}, 1fr)`}}>
-                         {barbers.map(barber => (
+                    <div className="flex-1 grid" style={{gridTemplateColumns: `repeat(${activeBarbers.length}, 1fr)`}}>
+                         {activeBarbers.map(barber => (
                             <div key={barber.id} className="p-4 text-center border-l border-gray-100 first:border-l-0">
                                 <img src={barber.avatarUrl} alt={barber.name} className="w-12 h-12 rounded-full mx-auto mb-2"/>
                                 <p className="font-semibold text-gray-700">{barber.name}</p>
@@ -703,7 +774,7 @@ const AgendaPage: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="flex-1 grid relative" style={{gridTemplateColumns: `repeat(${barbers.length}, 1fr)`}}>
+                        <div className="flex-1 grid relative" style={{gridTemplateColumns: `repeat(${activeBarbers.length}, 1fr)`}}>
                             {/* Background Lines */}
                             <div className="absolute inset-0">
                                 {timeSlots.map((_, index) => (
@@ -712,7 +783,7 @@ const AgendaPage: React.FC = () => {
                             </div>
                             
                             {/* Barber columns with appointments */}
-                            {barbers.map((barber, index) => {
+                            {activeBarbers.map((barber, index) => {
                                 const isShopOpen = dayOperatingHours?.isOpen ?? false;
     
                                 return (
