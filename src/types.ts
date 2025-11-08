@@ -32,7 +32,6 @@ export interface Permissions {
   canDeleteTransaction: boolean;
 }
 
-
 export interface User {
   id: number;
   name: string;

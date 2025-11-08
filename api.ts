@@ -1,5 +1,3 @@
-
-
 /**
  * Mock API Layer
  * 
@@ -220,7 +218,6 @@ export const api = {
     },
     
     // --- USERS / TEAM API ---
-    // FIX: Add getBarbers method.
     async getBarbers(): Promise<User[]> {
         await delay(NETWORK_DELAY);
         const users = storage.get<User[]>('api_users', []);
@@ -252,21 +249,31 @@ export const api = {
             status: 'active',
             jobTitle: userData.jobTitle || 'Barbeiro',
             accessProfile: userData.accessProfile || 'Barbeiro',
+            permissions: permissions,
             workStartTime: userData.workStartTime || '09:00',
             workEndTime: userData.workEndTime || '18:00',
             lunchStartTime: userData.lunchStartTime || '12:00',
             lunchEndTime: userData.lunchEndTime || '13:00',
-            permissions: permissions,
         };
 
         storage.set('api_users', [...users, newUser]);
         return newUser;
     },
-    async updateUser(id: number, updatedData: User): Promise<User> {
+    async updateUser(id: number, updatedData: Partial<User>): Promise<User> {
         await delay(NETWORK_DELAY);
-        const users = storage.get<User[]>('api_users', []).map(u => (u.id === id ? updatedData : u));
+        let finalUpdatedUser: User | undefined;
+        const users = storage.get<User[]>('api_users', []).map(u => {
+            if (u.id === id) {
+                finalUpdatedUser = { ...u, ...updatedData } as User;
+                return finalUpdatedUser;
+            }
+            return u;
+        });
+        
+        if (!finalUpdatedUser) throw new Error("User not found");
+
         storage.set('api_users', users);
-        return updatedData;
+        return finalUpdatedUser;
     },
 
     // --- APPOINTMENTS API ---
@@ -448,8 +455,9 @@ export const api = {
     },
     
     // --- DEV/TESTING API ---
-    async generateMockAppointmentsForToday(): Promise<{ targetDate: string, appointments: Appointment[] }> {
+    async generateInitialMockData(): Promise<{ targetDate: string, appointments: Appointment[] }> {
         await delay(NETWORK_DELAY);
+        
         const operatingHours = storage.get('api_operating_hours', DEFAULT_OPERATING_HOURS);
         const allUsers = storage.get<User[]>('api_users', []);
         const allServices = storage.get<Service[]>('api_services', []);
@@ -462,75 +470,91 @@ export const api = {
         if (activeBarbers.length === 0 || activeServices.length === 0 || activeClients.length === 0) {
             return { targetDate: new Date().toISOString().split('T')[0], appointments: [] };
         }
+        
+        const _generateAppointmentsForDate = (dateToGenerate: string, isBusyDay: boolean): Appointment[] => {
+            const generatedAppointments: Appointment[] = [];
+            const dayOfWeek = new Date(dateToGenerate + 'T00:00:00').toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
+            const shopDayConfig = operatingHours[dayOfWeek];
 
-        // 1. Find the target date (today or next open day)
-        let targetDate = new Date();
-        let targetDateStr = '';
-        let dayOfWeek: keyof OperatingHours;
+            if (!shopDayConfig.isOpen) return [];
 
+            for (const barber of activeBarbers) {
+                const dayStart = Math.max(timeToMinutes(shopDayConfig.openTime), timeToMinutes(barber.workStartTime));
+                const dayEnd = Math.min(timeToMinutes(shopDayConfig.closeTime), timeToMinutes(barber.workEndTime));
+                const lunchStart = timeToMinutes(barber.lunchStartTime);
+                const lunchEnd = timeToMinutes(barber.lunchEndTime);
+
+                let currentTime = dayStart;
+
+                while (currentTime < dayEnd) {
+                    const gapChance = isBusyDay ? 0.1 : 0.4;
+                    if (Math.random() < gapChance) {
+                        currentTime += 30;
+                        continue;
+                    }
+                    
+                    const service = activeServices[Math.floor(Math.random() * activeServices.length)];
+                    const client = activeClients[Math.floor(Math.random() * activeClients.length)];
+                    const slotStart = currentTime;
+                    const slotEnd = currentTime + service.duration;
+
+                    if (slotEnd > dayEnd || (slotStart < lunchEnd && slotEnd > lunchStart)) {
+                        currentTime += 15;
+                        continue;
+                    }
+                    
+                    generatedAppointments.push({
+                        id: Date.now() + generatedAppointments.length + Math.random(),
+                        barberId: barber.id,
+                        clientId: client.id,
+                        serviceId: service.id,
+                        date: dateToGenerate,
+                        startTime: minutesToTime(slotStart),
+                        endTime: minutesToTime(slotEnd)
+                    });
+                    currentTime = slotEnd;
+                }
+            }
+            return generatedAppointments;
+        };
+
+        // --- Date Calculation ---
+        let d0TargetDate = new Date();
+        let d0TargetDateStr = '';
         for (let i = 0; i < 7; i++) {
-            dayOfWeek = targetDate.toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
+            const dayOfWeek = d0TargetDate.toLocaleString('en-US', { weekday: 'long' }).toLowerCase() as keyof OperatingHours;
             if (operatingHours[dayOfWeek].isOpen) {
-                targetDateStr = targetDate.toISOString().split('T')[0];
+                d0TargetDateStr = d0TargetDate.toISOString().split('T')[0];
                 break;
             }
-            targetDate.setDate(targetDate.getDate() + 1);
+            d0TargetDate.setDate(d0TargetDate.getDate() + 1);
         }
+        if (!d0TargetDateStr) { d0TargetDateStr = new Date().toISOString().split('T')[0]; }
 
-        if (!targetDateStr) { // Should not happen with default settings
-             return { targetDate: new Date().toISOString().split('T')[0], appointments: [] };
-        }
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dMinus1DateStr = yesterday.toISOString().split('T')[0];
 
-        // 2. Generate new appointments
-        const newAppointments: Appointment[] = [];
-        const shopDayConfig = operatingHours[dayOfWeek!];
-
-        for (const barber of activeBarbers) {
-            const dayStart = Math.max(timeToMinutes(shopDayConfig.openTime), timeToMinutes(barber.workStartTime));
-            const dayEnd = Math.min(timeToMinutes(shopDayConfig.closeTime), timeToMinutes(barber.workEndTime));
-            const lunchStart = timeToMinutes(barber.lunchStartTime);
-            const lunchEnd = timeToMinutes(barber.lunchEndTime);
-
-            let currentTime = dayStart;
-
-            while (currentTime < dayEnd) {
-                // 30% chance to leave a 30-min gap
-                if (Math.random() < 0.3) {
-                    currentTime += 30;
-                    continue;
-                }
-                
-                const service = activeServices[Math.floor(Math.random() * activeServices.length)];
-                const client = activeClients[Math.floor(Math.random() * activeClients.length)];
-
-                const slotStart = currentTime;
-                const slotEnd = currentTime + service.duration;
-
-                // Check if slot is valid
-                if (slotEnd > dayEnd || (slotStart < lunchEnd && slotEnd > lunchStart)) {
-                    currentTime += 15; // Try next 15-min interval
-                    continue;
-                }
-                
-                newAppointments.push({
-                    id: Date.now() + newAppointments.length,
-                    barberId: barber.id,
-                    clientId: client.id,
-                    serviceId: service.id,
-                    date: targetDateStr,
-                    startTime: minutesToTime(slotStart),
-                    endTime: minutesToTime(slotEnd)
-                });
-
-                currentTime = slotEnd;
-            }
-        }
+        const dPlus1TargetDate = new Date(d0TargetDate);
+        dPlus1TargetDate.setDate(dPlus1TargetDate.getDate() + 1);
+        const dPlus1TargetDateStr = dPlus1TargetDate.toISOString().split('T')[0];
         
-        // 3. Update storage
+        // --- Generate and Store ---
+        const dMinus1Appointments = _generateAppointmentsForDate(dMinus1DateStr, true);
+        const d0Appointments = _generateAppointmentsForDate(d0TargetDateStr, false);
+        const dPlus1Appointments = _generateAppointmentsForDate(dPlus1TargetDateStr, false);
+        
         const allAppointments = storage.get<Appointment[]>('api_appointments', []);
-        const otherDayAppointments = allAppointments.filter(app => app.date !== targetDateStr);
-        storage.set('api_appointments', [...otherDayAppointments, ...newAppointments]);
+        const datesToClear = [dMinus1DateStr, d0TargetDateStr, dPlus1TargetDateStr];
+        const otherDayAppointments = allAppointments.filter(app => !datesToClear.includes(app.date));
+        
+        storage.set('api_appointments', [
+            ...otherDayAppointments, 
+            ...dMinus1Appointments,
+            ...d0Appointments,
+            ...dPlus1Appointments
+        ]);
 
-        return { targetDate: targetDateStr, appointments: newAppointments };
+        return { targetDate: d0TargetDateStr, appointments: d0Appointments };
     }
 };

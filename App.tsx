@@ -98,7 +98,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const generateInitialData = async () => {
         if (currentUser && currentUser.role !== Role.CLIENT && !sessionStorage.getItem('mock_data_generated')) {
-            const { targetDate, appointments } = await api.generateMockAppointmentsForToday();
+            const { targetDate, appointments } = await api.generateInitialMockData();
             setMockAppointments(appointments);
             setMockAppointmentsDate(targetDate);
             sessionStorage.setItem('mock_data_generated', 'true');

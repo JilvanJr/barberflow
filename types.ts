@@ -1,4 +1,3 @@
-
 export enum Role {
   ADMIN = 'admin',
   BARBER = 'barber',
@@ -32,7 +31,6 @@ export interface Permissions {
   canAddTransaction: boolean;
   canDeleteTransaction: boolean;
 }
-
 
 export interface User {
   id: number;

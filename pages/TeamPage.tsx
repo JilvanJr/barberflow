@@ -1,6 +1,9 @@
+
+
 import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
+// FIX: Removed unused UserSchedule import.
 import { User, Role } from '../types';
 import { PlusIcon, XIcon, ShieldCheckIcon, SearchIcon, ClockIcon, ImageIcon, EditIcon, EyeIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
@@ -20,6 +23,23 @@ const FilterButton: React.FC<{
     </button>
 );
 
+// FIX: Moved TimeInput component to module scope to avoid re-definition on render.
+const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void, disabled?: boolean}> = ({label, value, onChange, disabled}) => (
+    <div className="relative">
+         <label className="text-sm font-medium text-gray-700">{label}</label>
+        <div className="relative mt-1">
+            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+                type="time"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                disabled={disabled}
+                className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500 text-gray-900"
+            />
+        </div>
+    </div>
+);
+
 const NewTeamMemberModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -35,11 +55,11 @@ const NewTeamMemberModal: React.FC<{
                 email: '',
                 jobTitle: 'Barbeiro',
                 accessProfile: 'Barbeiro',
+                avatarUrl: '',
                 workStartTime: '09:00',
                 workEndTime: '18:00',
                 lunchStartTime: '12:00',
                 lunchEndTime: '13:00',
-                avatarUrl: '',
             });
         }
     }, [isOpen]);
@@ -55,21 +75,6 @@ const NewTeamMemberModal: React.FC<{
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void}> = ({label, value, onChange}) => (
-        <div className="relative">
-            <label className="text-sm font-medium text-gray-700">{label}</label>
-            <div className="relative mt-1">
-                <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                    type="time"
-                    value={value}
-                    onChange={e => onChange(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                />
-            </div>
-        </div>
-    );
-    
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-start pt-16 backdrop-blur-sm p-4 overflow-y-auto">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
@@ -148,12 +153,12 @@ const TeamMemberDetailsModal: React.FC<{
 }> = ({ isOpen, onClose, onSave, user }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<User>>({});
-
+    
     useEffect(() => {
         if(user) {
             setFormData(user);
         }
-        setIsEditing(false); // Reset editing state when modal opens or user changes
+        setIsEditing(false);
     }, [user, isOpen]);
 
     if (!isOpen || !user) return null;
@@ -172,22 +177,6 @@ const TeamMemberDetailsModal: React.FC<{
         setIsEditing(false);
         if (user) setFormData(user);
     }
-
-    const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void}> = ({label, value, onChange}) => (
-        <div className="relative">
-             <label className="text-sm font-medium text-gray-700">{label}</label>
-            <div className="relative mt-1">
-                <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                    type="time"
-                    value={value}
-                    onChange={e => onChange(e.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500 text-gray-900"
-                />
-            </div>
-        </div>
-    );
 
     const toggleBgClass = formData.status === 'active' 
         ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
@@ -234,15 +223,15 @@ const TeamMemberDetailsModal: React.FC<{
                                 <div className="border-t pt-4">
                                     <p className="text-sm font-medium text-gray-700 mb-2">Jornada</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
-                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} />
+                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} disabled={!isEditing} />
                                     </div>
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-700 mb-2">Almoço</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                    <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} />
-                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} />
+                                        <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} disabled={!isEditing} />
                                     </div>
                                 </div>
                             </>
@@ -328,10 +317,10 @@ const TeamPage: React.FC = () => {
         setIsDetailsModalOpen(true);
     }
     
-    const handleSave = useCallback(async (userToSave: Partial<User>) => {
+    const handleSave = useCallback(async (userToSave: User) => {
         try {
             if (userToSave.id) { // UPDATE
-                const updatedUser = await api.updateUser(userToSave.id, userToSave as User);
+                const updatedUser = await api.updateUser(userToSave.id, userToSave);
                 setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
                 setIsDetailsModalOpen(false);
                 showToast('Profissional atualizado com sucesso!', 'success');
@@ -366,7 +355,7 @@ const TeamPage: React.FC = () => {
                             placeholder="Buscar profissional..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 placeholder:italic placeholder:text-gray-400"
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400"
                         />
                         <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                     </div>

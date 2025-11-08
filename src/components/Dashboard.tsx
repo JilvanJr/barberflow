@@ -1,14 +1,16 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, Suspense } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { AppContext } from '../App';
-import AgendaPage from '../pages/AgendaPage';
-import ClientsPage from '../pages/ClientsPage';
-import ServicesPage from '../pages/ServicesPage';
-import CashFlowPage from '../pages/CashFlowPage';
-import TeamPage from '../pages/TeamPage';
-import SettingsPage from '../pages/SettingsPage';
-import HomePage from '../pages/HomePage';
+
+// FIX: Lazily load page components to break circular dependency
+const AgendaPage = React.lazy(() => import('../pages/AgendaPage'));
+const ClientsPage = React.lazy(() => import('../pages/ClientsPage'));
+const ServicesPage = React.lazy(() => import('../pages/ServicesPage'));
+const CashFlowPage = React.lazy(() => import('../pages/CashFlowPage'));
+const TeamPage = React.lazy(() => import('../pages/TeamPage'));
+const SettingsPage = React.lazy(() => import('../pages/SettingsPage'));
+const HomePage = React.lazy(() => import('../pages/HomePage'));
 
 const Dashboard: React.FC = () => {
     const context = useContext(AppContext);
@@ -41,7 +43,10 @@ const Dashboard: React.FC = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header />
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-                    {renderContent()}
+                    {/* FIX: Add Suspense boundary for lazy-loaded components */}
+                    <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                        {renderContent()}
+                    </Suspense>
                 </main>
             </div>
         </div>
