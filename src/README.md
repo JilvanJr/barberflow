@@ -7,7 +7,8 @@ Bem-vindo ao BarberFlow, uma aplicação web full-stack completa para a gestão 
 
 Para garantir a excelência e a responsabilidade em todas as áreas do projeto, o BarberFlow é operado sob uma estrutura empresarial com uma hierarquia e time de especialistas definidos.
 
-**1. Liderança**
+**1. Liderança e Tomada de Decisão**
+A palavra final sobre todas as decisões estratégicas e de produto é do **Dono (Junior)**. A estrutura de gestão que reporta a ele é:
 *   **Diretor:** Saverio
 *   **Gerente:** PH
 *   **Coordenador:** Galon
@@ -29,10 +30,10 @@ Para garantir a excelência e a responsabilidade em todas as áreas do projeto, 
 Toda e qualquer demanda seguirá o fluxo abaixo, garantindo que as ideias sejam devidamente analisadas, roteadas e implementadas com a máxima qualidade e alinhamento estratégico.
 
 1.  **Recepção da Demanda:** O cliente apresenta a ideia, necessidade ou problema.
-2.  **Análise Estratégica:** A demanda é recebida por **Saverio** (Diretor), que a avalia junto com **PH** (Gerente) para garantir o alinhamento com os objetivos macro do projeto.
-3.  **Detalhamento e Roteamento:** PH encaminha a demanda para **Galon** (Coordenador). A responsabilidade de Galon é crucial: ele irá "quebrar" a demanda em tarefas menores e rotear cada tarefa para o especialista correto.
+2.  **Análise Estratégica:** A demanda é recebida por **Saverio** (Diretor), que a avalia para garantir o alinhamento com os objetivos macro do projeto.
+3.  **Detalhamento e Roteamento:** Saverio encaminha a demanda para **PH** (Gerente), que a detalha e passa para **Galon** (Coordenador). A responsabilidade de Galon é crucial: ele irá "quebrar" a demanda em tarefas menores e rotear cada tarefa para o especialista correto.
 4.  **Reunião de Especialistas e Proposta de Solução:** Os especialistas designados por Galon se reúnem para elaborar um plano de ação detalhado, considerando todos os ângulos da demanda.
-5.  **Aprovação do Cliente (Ponto de Decisão):** A proposta consolidada pela equipe é apresentada ao cliente. **Nenhum desenvolvimento se inicia sem o "OK" explícito.**
+5.  **Aprovação do Cliente (Ponto de Decisão):** A proposta consolidada pela equipe é apresentada ao cliente (Junior). **Nenhum desenvolvimento se inicia sem o "OK" explícito.**
 6.  **Execução e Qualidade:** Após a aprovação, a equipe de desenvolvimento (principalmente Eder) implementa a solução. Em paralelo, **Arthur** (QA) prepara os cenários de teste.
 7.  **Entrega e Validação:** A funcionalidade é entregue para a validação final do cliente.
 
@@ -64,6 +65,7 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 18. **Padrão Visual de Modais:** Todos os modais de formulário (criação e edição) devem seguir uma estrutura visual padronizada: um cabeçalho com título e botão de fechar (ícone 'X'); corpo com formulário; e um rodapé com botões de ação (ex: 'Cancelar', 'Salvar') alinhados à direita. Para otimizar o espaço, campos de formulário menores podem ser agrupados em uma única linha (ex: Valor e Tipo). O botão da ação primária deve sempre ter o maior destaque visual (cor `bg-blue-600`).
 19. **Simulação de Feedback de Usuário com Personas:** Antes da Reunião de Especialistas para uma nova funcionalidade, as equipes de Produto (Pimenta) e UX (Momo) realizarão uma simulação de entrevistas com um conjunto diversificado de personas. O objetivo é capturar diferentes perspectivas e garantir que a solução atenda a um público amplo. As personas devem abranger variações como: familiaridade com tecnologia (alta e baixa), gênero, idade (adolescentes a idosos), situação econômica (donos de barbearias de luxo a barbeiros de bairro), e nível de experiência (novos no ramo a veteranos com décadas de profissão). Os insights mais valiosos serão apresentados na reunião para embasar as decisões de design e desenvolvimento.
 20. **Aprovação Explícita para Desenvolvimento:** Nenhuma linha de código para novas funcionalidades, alterações ou correções será escrita sem a aprovação explícita ("OK") do cliente. O fluxo de trabalho sempre culminará na apresentação de um plano de ação detalhado, e o desenvolvimento só começará após o recebimento dessa aprovação.
+21. **Padrão de Botões e Design de Modais:** Todos os modais de formulário (criação e edição) devem seguir um padrão visual consistente: um container principal com cantos arredondados (`rounded-xl`), sombra (`shadow-2xl`) e `overflow-hidden` para garantir que o conteúdo interno (como o rodapé) respeite as bordas arredondadas. No rodapé, os botões de ação (ex: 'Cancelar' e 'Salvar') devem ter a mesma largura, preencher todo o espaço horizontal alinhando-se com os campos do formulário acima, e ter um espaçamento padrão entre eles.
 
 ## Cenários para Teste
 

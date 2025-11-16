@@ -114,7 +114,7 @@ const ClientModal: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all overflow-hidden">
                 <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Novo Cliente</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
@@ -137,13 +137,15 @@ const ClientModal: React.FC<{
                             <FormError message={errors.email} />
                         </div>
                     </div>
-                    <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300">
-                            Cancelar
-                        </button>
-                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300">
-                            Salvar
-                        </button>
+                    <div className="p-6 bg-gray-50 border-t">
+                        <div className="flex items-center space-x-4">
+                            <button type="button" onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300">
+                                Cancelar
+                            </button>
+                            <button type="submit" className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300">
+                                Salvar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -258,7 +260,7 @@ const ClientDetailsModal: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all overflow-hidden">
                 <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Cliente</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
@@ -289,18 +291,20 @@ const ClientDetailsModal: React.FC<{
                         <input id="client-status-toggle" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                     </div>
                 </div>
-                <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
-                    {isEditing ? (
-                        <>
-                            <button onClick={handleCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
-                            <button onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
-                            <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
-                        </>
-                    )}
+                <div className="p-6 bg-gray-50 border-t">
+                    <div className="flex items-center space-x-4">
+                        {isEditing ? (
+                            <>
+                                <button onClick={handleCancel} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                                <button onClick={handleSave} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                                <button onClick={() => setIsEditing(true)} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,8 +336,8 @@ const ConfirmationModal: React.FC<{
                 <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
                 <p className="text-gray-600 my-4">{message}</p>
                 <div className="flex justify-center space-x-4">
-                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-full text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-36 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-36 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
                 </div>
             </div>
         </div>
@@ -375,7 +379,7 @@ const FilterButton: React.FC<{
     </button>
 );
 
-const ClientsPage: React.FC = () => {
+export const ClientsPage: React.FC = () => {
     const context = useContext(AppContext);
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);

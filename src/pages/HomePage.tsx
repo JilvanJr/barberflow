@@ -12,7 +12,8 @@ const getTodayLocalISOString = () => {
     return `${year}-${month}-${day}`;
 };
 
-const HomePage: React.FC = () => {
+// FIX: Change to a named export to avoid issues with circular dependencies.
+export const HomePage: React.FC = () => {
     const context = useContext(AppContext);
     
     const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +52,6 @@ const HomePage: React.FC = () => {
 
     const todaysRevenue = useMemo(() => {
         return transactions
-// FIX: Use `status` with value 'Finalizado' instead of `paymentStatus` with value 'completed'.
             .filter(t => t.date === today && t.type === TransactionType.INCOME && t.status === 'Finalizado')
             .reduce((sum, t) => sum + t.value, 0);
     }, [transactions, today]);

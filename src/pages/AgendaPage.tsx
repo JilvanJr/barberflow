@@ -558,7 +558,8 @@ const AppointmentDetailsModal: React.FC<{
     );
 };
 
-const AgendaPage: React.FC = () => {
+// FIX: Change to a named export to avoid issues with circular dependencies.
+export const AgendaPage: React.FC = () => {
     const context = useContext(AppContext);
     
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {

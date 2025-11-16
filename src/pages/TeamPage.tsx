@@ -177,7 +177,7 @@ const NewTeamMemberModal: React.FC<{
                         
                         {formData.accessProfile !== 'Admin' && (
                             <>
-                                <div className="border-t pt-5">
+                                <div className="pt-5">
                                     <p className="text-base font-medium text-gray-800 mb-2">Jornada de Trabalho</p>
                                     <div className="grid grid-cols-2 gap-4">
                                         <TimeInput label="Início do expediente" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
@@ -194,20 +194,22 @@ const NewTeamMemberModal: React.FC<{
                             </>
                         )}
 
-                        <div className="border-t pt-5">
+                        <div className="pt-5">
                            <button type="button" className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                                 <ImageIcon className="w-5 h-5 text-gray-500"/>
                                 Importar foto
                            </button>
                         </div>
                     </div>
-                    <div className="p-6 flex justify-end items-center space-x-3 bg-gray-50 border-t">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">
-                            Cancelar
-                        </button>
-                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                            Salvar
-                        </button>
+                    <div className="p-6 bg-gray-50 border-t">
+                        <div className="flex items-center space-x-4">
+                            <button type="button" onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">
+                                Cancelar
+                            </button>
+                            <button type="submit" className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                Salvar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -334,7 +336,7 @@ const TeamMemberDetailsModal: React.FC<{
 
                         {formData.accessProfile !== 'Admin' && (
                             <>
-                                <div className="border-t pt-4">
+                                <div className="pt-4">
                                     <p className="text-base font-medium text-gray-800 mb-2">Jornada de Trabalho</p>
                                     <div className="grid grid-cols-2 gap-4">
                                         <TimeInput label="Início do expediente" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} disabled={!isEditing} />
@@ -351,7 +353,7 @@ const TeamMemberDetailsModal: React.FC<{
                             </>
                         )}
                         
-                         <div className="border-t pt-4">
+                         <div className="pt-4">
                              <label htmlFor="status" className={`flex items-center justify-between ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                                 <span className="text-sm font-medium text-gray-700">Status</span>
                                  <div className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${toggleBgClass}`}>
@@ -361,18 +363,20 @@ const TeamMemberDetailsModal: React.FC<{
                              <input id="status" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                          </div>
                     </div>
-                    <div className="p-6 bg-gray-50 border-t flex justify-end space-x-3">
-                         {isEditing ? (
-                            <>
-                                <button type="button" onClick={handleCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
-                                <button type="button" onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
-                            </>
-                        ) : (
-                            <>
-                                <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
-                                <button type="button" onClick={() => setIsEditing(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
-                            </>
-                        )}
+                    <div className="p-6 bg-gray-50 border-t">
+                        <div className="flex items-center space-x-4">
+                             {isEditing ? (
+                                <>
+                                    <button type="button" onClick={handleCancel} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                                    <button type="button" onClick={handleSave} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                                </>
+                            ) : (
+                                <>
+                                    <button type="button" onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                                    <button type="button" onClick={() => setIsEditing(true)} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -381,7 +385,7 @@ const TeamMemberDetailsModal: React.FC<{
 };
 
 
-const TeamPage: React.FC = () => {
+export const TeamPage: React.FC = () => {
     const context = useContext(AppContext);
     const [isLoading, setIsLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');

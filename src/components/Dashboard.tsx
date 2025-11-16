@@ -3,7 +3,8 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { AppContext } from '../App';
 
-// FIX: Lazily load page components to break circular dependency
+// FIX: Lazily load page components to break circular dependency.
+// Using standard lazy loading with default exports, which are available on all page components.
 const AgendaPage = React.lazy(() => import('../pages/AgendaPage'));
 const ClientsPage = React.lazy(() => import('../pages/ClientsPage'));
 const ServicesPage = React.lazy(() => import('../pages/ServicesPage'));

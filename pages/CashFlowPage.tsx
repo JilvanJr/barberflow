@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useEffect, useMemo, useContext, useRef } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -55,7 +53,7 @@ const NewTransactionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSa
 
     return (
          <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md overflow-hidden">
                 <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Nova Transação</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
@@ -94,9 +92,11 @@ const NewTransactionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSa
                         </div>
                     </div>
                 </div>
-                <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
-                    <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
-                    <button onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar</button>
+                <div className="p-6 bg-gray-50 border-t">
+                    <div className="flex items-center space-x-4">
+                        <button onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                        <button onClick={handleSave} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -123,8 +123,8 @@ const TransactionDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; 
                     <p><strong>Método:</strong> {transaction.method}</p>
                     {transaction.completedBy && <p><strong>Finalizado por:</strong> {transaction.completedBy}</p>}
                 </div>
-                 <div className="flex justify-end mt-6">
-                    <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                 <div className="flex justify-center mt-6">
+                    <button onClick={onClose} className="w-36 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
                 </div>
             </div>
         </div>
@@ -145,9 +145,9 @@ const ConfirmPaymentModal: React.FC<{ isOpen: boolean; onClose: () => void; onCo
                     <option>Cartão de Crédito</option>
                     <option>Cartão de Débito</option>
                 </select>
-                <div className="flex justify-end space-x-4">
-                    <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
-                    <button onClick={() => onConfirm(method)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Confirmar</button>
+                <div className="flex items-center space-x-4">
+                    <button onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                    <button onClick={() => onConfirm(method)} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -162,9 +162,9 @@ const ConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void; onConf
                 <AlertTriangleIcon className="mx-auto w-12 h-12 text-red-500" />
                 <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
                 <p className="text-gray-600 my-4">{message}</p>
-                <div className="flex justify-center space-x-4">
-                    <button onClick={onClose} className="px-6 py-2.5 w-full bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Não</button>
-                    <button onClick={onConfirm} className="px-6 py-2.5 w-full text-white font-semibold rounded-lg bg-red-600 hover:bg-red-700">Sim, Cancelar</button>
+                <div className="flex items-center space-x-4">
+                    <button onClick={onClose} className="flex-1 px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Não</button>
+                    <button onClick={onConfirm} className="flex-1 px-6 py-2.5 text-white font-semibold rounded-lg bg-red-600 hover:bg-red-700">Sim, Cancelar</button>
                 </div>
             </div>
         </div>
@@ -204,16 +204,16 @@ const DateRangeModal: React.FC<{
                         <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate} className="w-full bg-white border border-gray-300 rounded-lg p-2.5" />
                     </div>
                 </div>
-                <div className="flex justify-end space-x-4 mt-8">
-                    <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
-                    <button onClick={handleApply} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Aplicar</button>
+                <div className="flex items-center space-x-4 mt-8">
+                    <button onClick={onClose} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                    <button onClick={handleApply} className="flex-1 text-center px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Aplicar</button>
                 </div>
             </div>
         </div>
     )
 }
 
-const CashFlowPage: React.FC = () => {
+export const CashFlowPage: React.FC = () => {
     const context = useContext(AppContext);
     
     // Page state

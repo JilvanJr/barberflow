@@ -315,7 +315,8 @@ const OperatingHoursContent: React.FC = () => {
     );
 };
 
-const SettingsPage: React.FC = () => {
+// FIX: Change to a named export to avoid issues with circular dependencies.
+export const SettingsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'permissions' | 'operatingHours'>('permissions');
     
     const TabButton: React.FC<{ tabName: typeof activeTab, label: string }> = ({ tabName, label }) => {
