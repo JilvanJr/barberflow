@@ -157,17 +157,17 @@ const AppointmentModal: React.FC<{
     const isEditing = !!initialData?.id;
 
     const barbersForDropdown = useMemo(() => {
-        if (!isEditing) {
-            return barbers.filter(barber => barber.status === 'active');
-        }
-        return barbers.filter(barber => {
-            if (barber.status === 'active') {
-                return true;
+        return barbers.filter(user => {
+            if (user.jobTitle !== 'Barbeiro') {
+                return false;
             }
-            if (barber.id === initialData?.barberId) {
-                return true;
+
+            if (!isEditing) {
+                return user.status === 'active';
             }
-            return false;
+            
+            // isEditing = true
+            return user.status === 'active' || user.id === initialData?.barberId;
         });
     }, [barbers, isEditing, initialData]);
 
@@ -558,8 +558,7 @@ const AppointmentDetailsModal: React.FC<{
     );
 };
 
-// FIX: Change to a named export to avoid issues with circular dependencies.
-export const AgendaPage: React.FC = () => {
+const AgendaPage: React.FC = () => {
     const context = useContext(AppContext);
     
     if (!context || !context.currentUser || context.currentUser.role === Role.CLIENT) {
