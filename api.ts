@@ -1,4 +1,5 @@
 
+
 /**
  * Mock API Layer
  * 
@@ -351,8 +352,17 @@ export const api = {
         const clients = storage.get<Client[]>('api_clients', []);
         const services = storage.get<Service[]>('api_services', []);
         
-        const now = new Date('2025-10-02T00:00:00'); // Simulate current time
+        const now = new Date(); // Use real current time
         const newTransactions: Transaction[] = [];
+
+        // Find the highest existing order ID to ensure unique, sequential IDs
+        let maxOrdId = transactions
+            .filter(t => t.id.toLowerCase().startsWith('#ord'))
+            .map(t => parseInt(t.id.substring(4), 10))
+            .filter(num => !isNaN(num))
+            .reduce((max, current) => Math.max(max, current), 0);
+            
+        let nextOrdId = maxOrdId + 1;
 
         appointments.forEach(app => {
             const appointmentDateTime = new Date(`${app.date}T${app.endTime}`);
@@ -363,9 +373,8 @@ export const api = {
                 const service = services.find(s => s.id === app.serviceId);
 
                 if (client && service) {
-// FIX: Use `status` instead of `paymentStatus` and structure data correctly.
                     newTransactions.push({
-                        id: `#APP${String(app.id).padStart(3, '0')}`,
+                        id: `#ord${String(nextOrdId++).padStart(3, '0')}`,
                         date: app.date,
                         name: client.name,
                         description: service.name,
@@ -381,16 +390,26 @@ export const api = {
         
         if (newTransactions.length > 0) {
             const combined = [...newTransactions, ...transactions];
-            transactions = Array.from(new Map(combined.map(item => [item.id, item])).values());
-            storage.set('api_transactions', transactions);
+            storage.set('api_transactions', combined);
+            transactions = combined;
         }
         return transactions;
     },
     async createTransaction(transData: Partial<Omit<Transaction, 'id' | 'status' | 'completedBy'>>, createdBy: string): Promise<Transaction> {
         await delay(NETWORK_DELAY);
         const transactions = storage.get<Transaction[]>('api_transactions', []);
+        
+        // Find the highest existing order ID to ensure unique, sequential IDs
+        const maxOrdId = transactions
+            .filter(t => t.id.toLowerCase().startsWith('#ord'))
+            .map(t => parseInt(t.id.substring(4), 10))
+            .filter(num => !isNaN(num))
+            .reduce((max, current) => Math.max(max, current), 0);
+            
+        const nextOrdId = maxOrdId + 1;
+
         const newTransaction: Transaction = {
-            id: `#ORD${String(transactions.length + 100).padStart(3, '0')}`,
+            id: `#ord${String(nextOrdId).padStart(3, '0')}`,
             date: transData.date || new Date().toISOString().split('T')[0],
             name: transData.name || '',
             description: transData.description || '',
@@ -408,7 +427,6 @@ export const api = {
         let updatedTx: Transaction | undefined;
         const transactions = storage.get<Transaction[]>('api_transactions', []).map(t => {
             if (t.id === id) {
-// FIX: Use `status` instead of `paymentStatus`.
                 updatedTx = { ...t, method: method, status: 'Finalizado', completedBy: completedBy };
                 return updatedTx;
             }

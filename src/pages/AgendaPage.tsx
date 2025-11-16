@@ -242,7 +242,7 @@ const AppointmentModal: React.FC<{
             .filter(app => app.barberId === Number(appointmentData.barberId) && app.date === appointmentData.date && app.id !== initialData?.id)
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-        const newAvailableTimes: string[] = [];
+        let newAvailableTimes: string[] = [];
         
         const shopOpen = timeToMinutes(dayOperatingHours.openTime);
         const shopClose = timeToMinutes(dayOperatingHours.closeTime);
@@ -281,6 +281,13 @@ const AppointmentModal: React.FC<{
                 newAvailableTimes.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
             }
         }
+        
+        if (appointmentData.date === getTodayLocalISOString()) {
+            const now = new Date();
+            const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+            newAvailableTimes = newAvailableTimes.filter(time => timeToMinutes(time) > currentTimeInMinutes);
+        }
+
         setAvailableTimes(newAvailableTimes);
     }, [appointmentData.serviceId, appointmentData.date, appointmentData.barberId, appointments, services, barbers, operatingHours, initialData]);
     
@@ -519,7 +526,6 @@ const AppointmentDetailsModal: React.FC<{
                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Agendamento</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                {(!canCancel && !canEdit) && <p className="text-sm bg-yellow-100 text-yellow-800 p-3 rounded-md mb-4">Você não tem permissão para editar ou excluir agendamentos.</p>}
                 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200 mb-6 text-sm text-gray-800">
                     <p><strong>Cliente:</strong> {client?.name}</p>
@@ -711,6 +717,17 @@ const AgendaPage: React.FC = () => {
     }
 
     const isPastDate = selectedDate < getTodayLocalISOString();
+    
+    const isAppointmentPast = (app: Appointment | null): boolean => {
+        if (!app) return false;
+        const todayStr = getTodayLocalISOString();
+        if (app.date < todayStr) return true;
+        if (app.date > todayStr) return false;
+        // If it's today, check the time
+        const now = new Date();
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+        return timeToMinutes(app.endTime) < currentTimeInMinutes;
+    };
 
     const handleSlotClick = (barberId: number, e: React.MouseEvent<HTMLDivElement>) => {
         if (isPastDate || !currentUserPermissions?.canCreateAppointment) return;
@@ -904,12 +921,13 @@ const AgendaPage: React.FC = () => {
                                         const height = getAppointmentDuration(app.startTime, app.endTime) * pixelsPerMinute;
                                         const tooltipText = `${client?.name} - ${service?.name} - ${app.startTime} ~ ${app.endTime}`;
                                         
-                                        const cardBaseClasses = "rounded-lg flex h-full overflow-hidden shadow-sm transition-colors";
-                                        const interactiveClasses = "bg-blue-100 border border-blue-300 cursor-pointer hover:bg-blue-200";
-                                        const pastClasses = "bg-gray-100 border border-gray-200 cursor-default";
+                                        const appointmentIsPast = isAppointmentPast(app);
+                                        const cardBaseClasses = "rounded-lg flex h-full overflow-hidden shadow-sm transition-colors cursor-pointer";
+                                        const interactiveClasses = "bg-blue-100 border border-blue-300 hover:bg-blue-200";
+                                        const pastClasses = "bg-blue-50 border border-blue-300 opacity-75 hover:bg-blue-100";
                                         const cardSideBorderBase = "w-1.5 flex-shrink-0";
                                         const interactiveSideBorder = "bg-blue-600";
-                                        const pastSideBorder = "bg-gray-400";
+                                        const pastSideBorder = "bg-blue-300";
                                         
                                         return (
                                             <div 
@@ -918,15 +936,15 @@ const AgendaPage: React.FC = () => {
                                                 style={{ top: `${top}px`, height: `${height}px` }}
                                             >
                                                <div 
-                                                    onClick={() => !isPastDate && handleAppointmentClick(app)}
+                                                    onClick={() => handleAppointmentClick(app)}
                                                     title={tooltipText}
-                                                    className={`${cardBaseClasses} ${isPastDate ? pastClasses : interactiveClasses}`}
+                                                    className={`${cardBaseClasses} ${appointmentIsPast ? pastClasses : interactiveClasses}`}
                                                 >
-                                                    <div className={`${cardSideBorderBase} ${isPastDate ? pastSideBorder : interactiveSideBorder}`}></div>
+                                                    <div className={`${cardSideBorderBase} ${appointmentIsPast ? pastSideBorder : interactiveSideBorder}`}></div>
                                                     <div className="p-2 overflow-hidden flex-grow">
-                                                        <p className={`font-semibold text-sm truncate ${isPastDate ? 'text-gray-600' : 'text-blue-900'}`}>{client?.name}</p>
-                                                        <p className="text-xs text-gray-600 truncate">{app.startTime} - {app.endTime}</p>
-                                                        <p className="text-xs text-gray-600 truncate">{service?.name}</p>
+                                                        <p className={`font-semibold text-sm truncate ${appointmentIsPast ? 'text-blue-800/80' : 'text-blue-900'}`}>{client?.name}</p>
+                                                        <p className={`text-xs truncate ${appointmentIsPast ? 'text-gray-600/80' : 'text-gray-600'}`}>{app.startTime} - {app.endTime}</p>
+                                                        <p className={`text-xs truncate ${appointmentIsPast ? 'text-gray-600/80' : 'text-gray-600'}`}>{service?.name}</p>
                                                     </div>
                                                </div>
                                             </div>
@@ -957,8 +975,8 @@ const AgendaPage: React.FC = () => {
                 onCancel={handleCancelAppointment}
                 onEdit={handleEditClick}
                 appointment={selectedAppointment}
-                canCancel={!isPastDate && !!currentUserPermissions?.canCancelAppointment}
-                canEdit={!isPastDate && !!currentUserPermissions?.canCreateAppointment}
+                canCancel={!isAppointmentPast(selectedAppointment) && !!currentUserPermissions?.canCancelAppointment}
+                canEdit={!isAppointmentPast(selectedAppointment) && !!currentUserPermissions?.canCreateAppointment}
                 clients={clients}
                 services={services}
                 barbers={barbers}
