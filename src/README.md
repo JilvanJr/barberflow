@@ -87,6 +87,5 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 
 ## Cenários para Teste
 
-
 ---- 
 Historico do que está sendo realizado:

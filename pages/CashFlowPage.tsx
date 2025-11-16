@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useContext, useRef } 
 import { AppContext } from '../App';
 import { api } from '../api';
 import { Transaction, TransactionType, Role, TransactionStatus } from '../types';
-import { PlusIcon, XIcon, SearchIcon, EyeIcon, BanIcon, CheckIcon, TrendingUpIcon, TrendingDownIcon, WalletIcon, AlertTriangleIcon, ClockIcon, CheckCircleIcon, CalendarIcon, FilterIcon } from '../components/icons';
+import { PlusIcon, XIcon, SearchIcon, EyeIcon, BanIcon, CheckIcon, TrendingUpIcon, TrendingDownIcon, WalletIcon, AlertTriangleIcon, ClockIcon, CheckCircleIcon, CalendarIcon, FilterIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
 type Period = 'hoje' | 'ontem' | 'semana' | 'mes' | 'custom';
 type ModalType = 'new' | 'details' | 'confirm' | 'cancel' | 'dateRange' | null;
@@ -228,6 +228,9 @@ export const CashFlowPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [methodFilter, setMethodFilter] = useState('all');
     
+    // Sort state
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction; direction: 'ascending' | 'descending' }>({ key: 'date', direction: 'descending' });
+    
     // Modal states
     const [activeModal, setActiveModal] = useState<ModalType>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -246,7 +249,7 @@ export const CashFlowPage: React.FC = () => {
         setIsLoading(true);
         try {
             const data = await api.getTransactions();
-            setTransactions(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            setTransactions(data);
         } catch (error) {
             console.error("Failed to fetch transactions", error);
         } finally {
@@ -258,12 +261,20 @@ export const CashFlowPage: React.FC = () => {
         fetchTransactions();
     }, [fetchTransactions]);
 
-    const filteredTransactions = useMemo(() => {
-        let items = [...transactions];
+    const requestSort = (key: keyof Transaction) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
 
+    const processedTransactions = useMemo(() => {
+        let items = [...transactions];
         const today = new Date();
         today.setHours(0,0,0,0);
 
+        // Filtering
         if (activePeriod === 'custom' && customDateRange.start && customDateRange.end) {
              const start = new Date(customDateRange.start + 'T00:00:00').getTime();
              const end = new Date(customDateRange.end + 'T00:00:00').getTime();
@@ -301,23 +312,42 @@ export const CashFlowPage: React.FC = () => {
             items = items.filter(t => t.name.toLowerCase().includes(lower) || t.id.toLowerCase().includes(lower));
         }
 
+        // Sorting
+        if (sortConfig.key) {
+            items.sort((a, b) => {
+                const aValue = a[sortConfig.key!];
+                const bValue = b[sortConfig.key!];
+
+                if (aValue === null || aValue === undefined) return 1;
+                if (bValue === null || bValue === undefined) return -1;
+                
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
         return items;
-    }, [transactions, activePeriod, customDateRange, searchTerm, typeFilter, statusFilter, methodFilter]);
+    }, [transactions, activePeriod, customDateRange, searchTerm, typeFilter, statusFilter, methodFilter, sortConfig]);
 
     const paginatedTransactions = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredTransactions, currentPage]);
+        return processedTransactions.slice(startIndex, startIndex + itemsPerPage);
+    }, [processedTransactions, currentPage]);
 
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const totalPages = Math.ceil(processedTransactions.length / itemsPerPage);
 
-    useEffect(() => { setCurrentPage(1) }, [activePeriod, customDateRange, searchTerm, typeFilter, statusFilter, methodFilter]);
+    useEffect(() => { setCurrentPage(1) }, [activePeriod, customDateRange, searchTerm, typeFilter, statusFilter, methodFilter, sortConfig]);
     
     const { faturamento, despesas, resultado } = useMemo(() => {
-        const faturamento = filteredTransactions.filter(t => t.type === TransactionType.INCOME && t.status === 'Finalizado').reduce((s, t) => s + t.value, 0);
-        const despesas = filteredTransactions.filter(t => t.type === TransactionType.EXPENSE && t.status !== 'Cancelado').reduce((s, t) => s + t.value, 0);
+        const faturamento = processedTransactions.filter(t => t.type === TransactionType.INCOME && t.status === 'Finalizado').reduce((s, t) => s + t.value, 0);
+        const despesas = processedTransactions.filter(t => t.type === TransactionType.EXPENSE && t.status !== 'Cancelado').reduce((s, t) => s + t.value, 0);
         return { faturamento, despesas, resultado: faturamento - despesas };
-    }, [filteredTransactions]);
+    }, [processedTransactions]);
 
     const handleOpenModal = (type: ModalType, transaction: Transaction | null = null) => {
         setSelectedTransaction(transaction);
@@ -381,6 +411,22 @@ export const CashFlowPage: React.FC = () => {
             {label}
         </button>
     );
+
+    const SortableHeader: React.FC<{ columnKey: keyof Transaction; title: string; }> = ({ columnKey, title }) => {
+        const isSorted = sortConfig.key === columnKey;
+        const icon = isSorted 
+            ? (sortConfig.direction === 'ascending' ? <ArrowUpIcon className="w-4 h-4 ml-1 text-gray-800" /> : <ArrowDownIcon className="w-4 h-4 ml-1 text-gray-800" />) 
+            : <div className="w-4 h-4 ml-1" />;
+        
+        return (
+             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <button onClick={() => requestSort(columnKey)} className="flex items-center group">
+                    <span className="group-hover:text-gray-900">{title}</span>
+                    {icon}
+                </button>
+            </th>
+        );
+    };
 
     if (isLoading) return <div className="text-center p-8">Carregando fluxo de caixa...</div>;
     
@@ -474,13 +520,13 @@ export const CashFlowPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <SortableHeader columnKey="id" title="ID" />
+                            <SortableHeader columnKey="name" title="Nome" />
+                            <SortableHeader columnKey="description" title="Descrição" />
+                            <SortableHeader columnKey="date" title="Data" />
+                            <SortableHeader columnKey="value" title="Valor" />
+                            <SortableHeader columnKey="type" title="Tipo" />
+                            <SortableHeader columnKey="status" title="Status" />
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                         </tr>
                     </thead>
@@ -509,7 +555,7 @@ export const CashFlowPage: React.FC = () => {
                 </table>
                  {totalPages > 1 && (
                     <div className="py-4 px-6 flex items-center justify-between border-t">
-                        <span className="text-sm text-gray-600">Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}</span>
+                        <span className="text-sm text-gray-600">Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, processedTransactions.length)} de {processedTransactions.length}</span>
                         <div className="flex items-center space-x-2">
                             <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="px-3 py-1 text-sm rounded-md border disabled:opacity-50">Anterior</button>
                             <span className="text-sm text-gray-700">Página {currentPage} de {totalPages}</span>
