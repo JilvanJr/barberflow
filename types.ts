@@ -88,15 +88,18 @@ export enum TransactionType {
     EXPENSE = 'Saída',
 }
 
+export type TransactionStatus = 'Finalizado' | 'Pendente' | 'Cancelado';
+
 export interface Transaction {
     id: string;
     date: string;
     name: string;
+    description: string;
     method: string;
     type: TransactionType;
     value: number;
     appointmentId?: number;
-    paymentStatus: 'pending' | 'completed';
+    status: TransactionStatus;
     completedBy?: string;
 }
 

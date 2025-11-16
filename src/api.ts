@@ -1,3 +1,4 @@
+
 /**
  * Mock API Layer
  * 
@@ -362,10 +363,17 @@ export const api = {
                 const service = services.find(s => s.id === app.serviceId);
 
                 if (client && service) {
+// FIX: Use `status` instead of `paymentStatus` and structure data correctly.
                     newTransactions.push({
-                        id: `#APP${String(app.id).padStart(3, '0')}`, date: app.date, name: `${service.name} - ${client.name}`,
-                        method: 'Aguardando', type: TransactionType.INCOME, value: service.price,
-                        appointmentId: app.id, paymentStatus: 'pending',
+                        id: `#APP${String(app.id).padStart(3, '0')}`,
+                        date: app.date,
+                        name: client.name,
+                        description: service.name,
+                        method: 'Aguardando',
+                        type: TransactionType.INCOME,
+                        value: service.price,
+                        appointmentId: app.id,
+                        status: 'Pendente',
                     });
                 }
             }
@@ -378,14 +386,18 @@ export const api = {
         }
         return transactions;
     },
-    async createTransaction(transData: Omit<Transaction, 'id'|'date'|'paymentStatus'|'completedBy'>, createdBy: string): Promise<Transaction> {
+    async createTransaction(transData: Partial<Omit<Transaction, 'id' | 'status' | 'completedBy'>>, createdBy: string): Promise<Transaction> {
         await delay(NETWORK_DELAY);
         const transactions = storage.get<Transaction[]>('api_transactions', []);
-         const newTransaction: Transaction = {
-            ...transData,
-            id: `#ORD${String(transactions.length + 1).padStart(3, '0')}`,
-            date: new Date().toISOString().split('T')[0],
-            paymentStatus: 'completed',
+        const newTransaction: Transaction = {
+            id: `#ORD${String(transactions.length + 100).padStart(3, '0')}`,
+            date: transData.date || new Date().toISOString().split('T')[0],
+            name: transData.name || '',
+            description: transData.description || '',
+            method: transData.method || 'Pix',
+            type: transData.type || TransactionType.INCOME,
+            value: transData.value || 0,
+            status: 'Finalizado',
             completedBy: createdBy
         };
         storage.set('api_transactions', [newTransaction, ...transactions]);
@@ -396,7 +408,22 @@ export const api = {
         let updatedTx: Transaction | undefined;
         const transactions = storage.get<Transaction[]>('api_transactions', []).map(t => {
             if (t.id === id) {
-                updatedTx = { ...t, method: method, paymentStatus: 'completed', completedBy: completedBy };
+// FIX: Use `status` instead of `paymentStatus`.
+                updatedTx = { ...t, method: method, status: 'Finalizado', completedBy: completedBy };
+                return updatedTx;
+            }
+            return t;
+        });
+        if (!updatedTx) throw new Error("Transaction not found");
+        storage.set('api_transactions', transactions);
+        return updatedTx;
+    },
+    async cancelTransaction(id: string, completedBy: string): Promise<Transaction> {
+        await delay(NETWORK_DELAY);
+        let updatedTx: Transaction | undefined;
+        const transactions = storage.get<Transaction[]>('api_transactions', []).map(t => {
+            if (t.id === id) {
+                updatedTx = { ...t, status: 'Cancelado', method: 'N/A', completedBy };
                 return updatedTx;
             }
             return t;

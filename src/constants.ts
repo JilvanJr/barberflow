@@ -108,12 +108,17 @@ export const CLIENTS: Client[] = [
   { id: 7, name: 'Luccas Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5614', email: 'luccas@email.com', cpf: '777.777.777-77', role: Role.CLIENT, status: 'active' },
   { id: 8, name: 'Filipe Ret', birthDate: '01/01/2000', phone: '(11) 91234-5615', email: 'filipe@email.com', cpf: '888.888.888-88', role: Role.CLIENT, status: 'inactive' },
   { id: 9, name: 'Teto', birthDate: '01/01/2000', phone: '(11) 91234-5616', email: 'teto@email.com', cpf: '999.999.999-99', role: Role.CLIENT, status: 'active' },
+  { id: 10, name: 'Cristiano Ronaldo', birthDate: '05/02/1985', phone: '(11) 98888-7777', email: 'cr7@email.com', cpf: '123.456.789-00', role: Role.CLIENT, status: 'active' },
+  { id: 11, name: 'Jilvan Jr', birthDate: '10/11/1990', phone: '(11) 97777-6666', email: 'jilvan@email.com', cpf: '987.654.321-00', role: Role.CLIENT, status: 'active' },
+  { id: 12, name: 'LeBron James', birthDate: '30/12/1984', phone: '(11) 96666-5555', email: 'lebron@email.com', cpf: '111.222.333-44', role: Role.CLIENT, status: 'active' },
+  { id: 13, name: 'LaMelo Ball', birthDate: '22/08/2001', phone: '(11) 95555-4444', email: 'lamelo@email.com', cpf: '444.555.666-77', role: Role.CLIENT, status: 'active' },
+  { id: 14, name: 'Neymar Jr', birthDate: '05/02/1992', phone: '(11) 94444-3333', email: 'neymar@email.com', cpf: '777.888.999-00', role: Role.CLIENT, status: 'active' },
 ];
 
 export const SERVICES: Service[] = [
   { id: 1, name: 'Barba', price: 70, duration: 40, status: 'active' },
-  { id: 2, name: 'Corte', price: 70, duration: 40, status: 'active' },
-  { id: 3, name: 'Corte e Barba', price: 125, duration: 60, status: 'active' },
+  { id: 2, name: 'Corte', price: 50, duration: 40, status: 'active' },
+  { id: 3, name: 'Corte e Barba', price: 80, duration: 60, status: 'active' },
   { id: 4, name: 'Corte (tamanho único-careca)', price: 50, duration: 30, status: 'active' },
   { id: 5, name: 'Corte Infantil', price: 70, duration: 40, status: 'active' },
   { id: 6, name: 'Corte (tamanho único-careca)/Barba', price: 95, duration: 60, status: 'active' },
@@ -149,18 +154,34 @@ export const SERVICES: Service[] = [
   { id: 36, name: 'Progressiva', price: 150, duration: 40, status: 'active' },
   { id: 37, name: 'Selagem', price: 130, duration: 40, status: 'active' },
   { id: 38, name: 'Sobrancelha', price: 30, duration: 10, status: 'active' },
+  { id: 39, name: 'Pezinho', price: 10, duration: 10, status: 'active'},
 ];
 
 export const APPOINTMENTS: Appointment[] = [];
 
+const todayDate = new Date();
+const yesterdayDate = new Date();
+yesterdayDate.setDate(todayDate.getDate() - 1);
+const dayBeforeYesterdayDate = new Date();
+dayBeforeYesterdayDate.setDate(todayDate.getDate() - 2);
+const lastWeekDate = new Date();
+lastWeekDate.setDate(todayDate.getDate() - 4);
+const startOfMonthDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+
+const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
 export const TRANSACTIONS: Transaction[] = [
-    { id: '#ORD001', date: today, name: 'Cliente 1', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD002', date: today, name: 'Cliente 2', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD003', date: today, name: 'Natan Borges Ltda.', method: 'Retirada', type: TransactionType.EXPENSE, value: 250.00, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD004', date: '2025-10-07', name: 'Cliente 4', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD005', date: '2025-10-07', name: 'Cliente 5', method: 'Cartão de Débito', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD006', date: '2025-10-07', name: 'Cliente 6', method: 'Pix', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD007', date: '2025-10-07', name: 'Cliente 7', method: 'Dinheiro', type: TransactionType.INCOME, value: 49.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD008', date: '2025-10-08', name: 'Cliente 8', method: 'Pix', type: TransactionType.INCOME, value: 35.90, paymentStatus: 'completed', completedBy: 'Natan Borges' },
-    { id: '#ORD009', date: '2025-10-08', name: 'Cliente 9', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 99.80, paymentStatus: 'completed', completedBy: 'Natan Borges' },
+    { id: '#ord001', name: 'Lionel Messi', description: 'Corte + Barba', date: formatDate(todayDate), value: 80.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Débito', completedBy: 'Natan Borges' },
+    { id: '#ord002', name: 'Aluguel', description: 'Pagamento do Aluguel', date: formatDate(todayDate), value: 1500.00, type: TransactionType.EXPENSE, status: 'Finalizado', method: 'Pix', completedBy: 'Natan Borges' },
+    { id: '#ord003', name: 'Cristiano Ronaldo', description: 'Corte', date: formatDate(todayDate), value: 50.00, type: TransactionType.INCOME, status: 'Pendente', method: 'Aguardando', completedBy: '' },
+    { id: '#ord004', name: 'Jilvan Jr', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Dinheiro', completedBy: 'Natan Borges' },
+    { id: '#ord005', name: 'LeBron James', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Pix', completedBy: 'Natan Borges' },
+    { id: '#ord006', name: 'LaMelo Ball', description: 'Pezinho', date: formatDate(dayBeforeYesterdayDate), value: 10.00, type: TransactionType.INCOME, status: 'Cancelado', method: 'N/A', completedBy: '' },
+    { id: '#ord007', name: 'Neymar Jr', description: 'Corte', date: formatDate(lastWeekDate), value: 50.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Crédito', completedBy: 'Natan Borges' },
+    { id: '#ord008', date: formatDate(lastWeekDate), name: 'Harry Kane', description: 'Serviço XYZ', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, status: 'Finalizado', completedBy: 'Natan Borges' },
+    { id: '#ord009', date: formatDate(startOfMonthDate), name: 'Renato Torres', description: 'Serviço ABC', method: 'Cartão de Débito', type: TransactionType.INCOME, value: 49.90, status: 'Finalizado', completedBy: 'Natan Borges' },
+    { id: '#ord010', date: formatDate(todayDate), name: 'Yago Oproprio', description: 'Serviço TTT', method: 'Dinheiro', type: TransactionType.INCOME, value: 75.00, status: 'Finalizado', completedBy: 'Natan Borges' },
+    { id: '#ord011', date: formatDate(yesterdayDate), name: 'Luccas Carlos', description: 'Serviço UUU', type: TransactionType.INCOME, value: 120.00, status: 'Pendente', method: 'Aguardando', completedBy: '' },
+    { id: '#ord012', date: formatDate(lastWeekDate), name: 'Fornecedor de Produtos', description: 'Pomadas e Shampoos', method: 'Pix', type: TransactionType.EXPENSE, value: 200.00, status: 'Finalizado', completedBy: 'Natan Borges' },
+    { id: '#ord013', date: formatDate(startOfMonthDate), name: 'Filipe Ret', description: 'Combo Soberano', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 300.00, status: 'Finalizado', completedBy: 'Natan Borges' },
 ];

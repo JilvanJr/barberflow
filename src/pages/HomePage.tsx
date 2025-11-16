@@ -51,7 +51,8 @@ const HomePage: React.FC = () => {
 
     const todaysRevenue = useMemo(() => {
         return transactions
-            .filter(t => t.date === today && t.type === TransactionType.INCOME && t.paymentStatus === 'completed')
+// FIX: Use `status` with value 'Finalizado' instead of `paymentStatus` with value 'completed'.
+            .filter(t => t.date === today && t.type === TransactionType.INCOME && t.status === 'Finalizado')
             .reduce((sum, t) => sum + t.value, 0);
     }, [transactions, today]);
     

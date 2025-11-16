@@ -16,6 +16,36 @@ export const TrendingUpIcon: React.FC<IconProps> = ({ className }) => (
     </svg>
 );
 
+export const TrendingDownIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>
+    </svg>
+);
+
+export const WalletIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M20 12V8H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4Z"></path><path d="M4 6v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h2v-4h-2Z"></path>
+    </svg>
+);
+
+export const FilterIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+    </svg>
+);
+
+export const BanIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+    </svg>
+);
+
+export const CheckIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+);
+
 export const MustacheIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M152.5,95.5c-4.2-2.3-33.8-21.3-33.8-21.3c-2.6-1.7-5.9-1.7,8.5,0c-1.3,0.8-30.8,19-33.8,21.3c-13,7.1-23.4,14.2-23.4,24.3c0,10.1,10.4,14.2,23.4,14.2c13,0,16.1-4,20.3-6.2c4.2-2.3,20.3-12.7,20.3-12.7c2.6-1.7,5.9-1.7,8.5,0c0,0,16.1,10.4,20.3,12.7c4.2,2.3,7.3,6.2,20.3,6.2c13,0,23.4-4,23.4-14.2C175.9,109.7,165.5,102.6,152.5,95.5z"/>

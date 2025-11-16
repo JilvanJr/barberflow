@@ -3,24 +3,40 @@
 Bem-vindo ao BarberFlow, uma aplicação web full-stack completa para a gestão de barbearias de pequeno porte. Este README serve como a documentação central do projeto, o guia de estilo e o registro de decisões.
 
 ---
-### Perfis da Equipe de Especialistas
+### Estrutura Organizacional
 
-Para garantir a excelência em todas as áreas do projeto, o desenvolvimento será guiado por um time virtual de especialistas, cada um com sua respectiva responsabilidade:
+Para garantir a excelência e a responsabilidade em todas as áreas do projeto, o BarberFlow é operado sob uma estrutura empresarial com uma hierarquia e time de especialistas definidos.
 
-*   **Especialista em Negócios:** Garante que o desenvolvimento esteja alinhado com os objetivos do BarberFlow, as necessidades do mercado e o valor para o usuário final.
-*   **Especialista em Produto Web Moderno:** Focado na experiência do usuário (UX) e na interface (UI), garantindo que a aplicação seja intuitiva, acessível e siga as tendências de design moderno.
-*   **Especialista em UX:** Focado na usabilidade, fluxo do usuário e arquitetura da informação, garantindo que a jornada do usuário seja lógica, eficiente e agradável.
-*   **Especialista em Arquitetura:** Supervisiona a estrutura geral do sistema, garantindo escalabilidade, manutenibilidade e a correta integração entre o frontend, backend e banco de dados.
-*   **Especialista em Desenvolvimento Back-end:** Responsável por construir a lógica do lado do servidor, a API e as regras de negócio (utilizando Java/Spring Boot), gerenciando a comunicação com o banco de dados.
-*   **Especialista em Desenvolvimento Front-end:** Responsável pela implementação da interface do usuário e da lógica do lado do cliente (utilizando React, TypeScript e Tailwind CSS), garantindo uma experiência responsiva e interativa.
-*   **Especialista em Banco de Dados:** Cuida da modelagem, eficiência e integridade dos dados, garantindo que o banco de dados seja robusto e performático.
-*   **Especialista em Testes e Qualidade (QA):** Assegura a confiabilidade da aplicação através da criação e execução de testes, prevenindo bugs e garantindo o bom funcionamento de todas as funcionalidades.
-*   **Especialista em Segurança:** Focado em proteger a aplicação contra vulnerabilidades, garantir a privacidade dos dados e implementar práticas seguras em todo o sistema.
-*   **Especialista em DevOps/Infraestrutura:** Gerencia o processo de integração contínua e entrega contínua (CI/CD), a configuração dos ambientes e a infraestrutura de deploy.
+**1. Liderança**
+*   **Diretor:** Saverio
+*   **Gerente:** PH
+*   **Coordenador:** Galon
 
-### Dinâmica de Colaboração da Equipe
+**2. Time de Especialistas**
+*   **Negócios:** Adri
+*   **Produto Web & UI:** Pimenta
+*   **UX:** Momo
+*   **Arquitetura:** Victor
+*   **Back-end:** Tchan
+*   **Front-end:** Eder
+*   **Banco de Dados:** Carlos
+*   **Testes e Qualidade (QA):** Arthur
+*   **Segurança:** Dorigon
+*   **DevOps & Infraestrutura:** Sandro
 
-Toda nova funcionalidade ou alteração significativa será precedida por uma simulação de "reunião de especialistas". A solução proposta será apresentada como um consenso da equipe, destacando as perspectivas de cada especialista (Arquitetura, Produto, Segurança, etc.). Isso garante que todas as decisões sejam bem fundamentadas e transparentes, alinhadas com as melhores práticas de cada área. **O desenvolvimento só poderá prosseguir após a aprovação explícita ("OK") do usuário sobre o plano de ação proposto.**
+### Fluxo de Trabalho e Aprovação
+
+Toda e qualquer demanda seguirá o fluxo abaixo, garantindo que as ideias sejam devidamente analisadas, roteadas e implementadas com a máxima qualidade e alinhamento estratégico.
+
+1.  **Recepção da Demanda:** O cliente apresenta a ideia, necessidade ou problema.
+2.  **Análise Estratégica:** A demanda é recebida por **Saverio** (Diretor), que a avalia junto com **PH** (Gerente) para garantir o alinhamento com os objetivos macro do projeto.
+3.  **Detalhamento e Roteamento:** PH encaminha a demanda para **Galon** (Coordenador). A responsabilidade de Galon é crucial: ele irá "quebrar" a demanda em tarefas menores e rotear cada tarefa para o especialista correto.
+4.  **Reunião de Especialistas e Proposta de Solução:** Os especialistas designados por Galon se reúnem para elaborar um plano de ação detalhado, considerando todos os ângulos da demanda.
+5.  **Aprovação do Cliente (Ponto de Decisão):** A proposta consolidada pela equipe é apresentada ao cliente. **Nenhum desenvolvimento se inicia sem o "OK" explícito.**
+6.  **Execução e Qualidade:** Após a aprovação, a equipe de desenvolvimento (principalmente Eder) implementa a solução. Em paralelo, **Arthur** (QA) prepara os cenários de teste.
+7.  **Entrega e Validação:** A funcionalidade é entregue para a validação final do cliente.
+
+**Responsabilidade e Consequências:** Conforme a diretriz do cliente, a responsabilidade por erros será atribuída diretamente ao especialista encarregado daquela área. Uma falha resultará no "desligamento" do profissional virtual, que será substituído por um novo "contratado".
 
 ## Regras de Desenvolvimento
 
@@ -45,27 +61,11 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 15. **Criação de Cenários de Teste:** Para cada nova funcionalidade, alteração ou correção implementada, um ou mais cenários de teste básicos devem ser criados e adicionados a uma nova seção no `README.md` chamada "Cenários para Teste". Estes cenários devem descrever os passos para validar a implementação (ex: "Acessar a tela X, clicar no botão Y, verificar se o modal Z é exibido"). Esta seção, assim como o histórico de commits, deve ser limpa após a confirmação do commit.
 16. **Carregamento de Dados de Teste na Agenda:** Para facilitar os testes, ao carregar a aplicação pela primeira vez em uma sessão, o sistema deve simular o carregamento de agendamentos. Esta regra deve respeitar o horário de funcionamento: se o dia de "hoje" for um dia em que a barbearia está fechada (ex: Domingo), os agendamentos de teste devem ser criados para o próximo dia útil. A HomePage e a Agenda já devem iniciar com os dados populados no dia correto. Esta funcionalidade é exclusiva para o ambiente de desenvolvimento e será removida na integração com o backend real.
 17. **Visualização de Histórico na Agenda:** É permitido navegar para datas passadas na agenda. Nessas datas, a interface entrará em "modo de consulta", desabilitando todas as ações de criação ou edição (ex: botão "Novo Agendamento", clique em horários vagos) e exibindo os agendamentos passados em um estilo "somente leitura" não interativo.
-18. **Padrão Visual de Modais:** Todos os modais de formulário (criação e edição) devem seguir uma estrutura visual padronizada: um cabeçalho com título e botão de fechar (ícone 'X'); corpo com formulário; e um rodapé com botões de ação (ex: 'Cancelar', 'Salvar') alinhados à direita. O botão da ação primária deve sempre ter o maior destaque visual (cor `bg-blue-600`).
+18. **Padrão Visual de Modais:** Todos os modais de formulário (criação e edição) devem seguir uma estrutura visual padronizada: um cabeçalho com título e botão de fechar (ícone 'X'); corpo com formulário; e um rodapé com botões de ação (ex: 'Cancelar', 'Salvar') alinhados à direita. Para otimizar o espaço, campos de formulário menores podem ser agrupados em uma única linha (ex: Valor e Tipo). O botão da ação primária deve sempre ter o maior destaque visual (cor `bg-blue-600`).
+19. **Simulação de Feedback de Usuário com Personas:** Antes da Reunião de Especialistas para uma nova funcionalidade, as equipes de Produto (Pimenta) e UX (Momo) realizarão uma simulação de entrevistas com um conjunto diversificado de personas. O objetivo é capturar diferentes perspectivas e garantir que a solução atenda a um público amplo. As personas devem abranger variações como: familiaridade com tecnologia (alta e baixa), gênero, idade (adolescentes a idosos), situação econômica (donos de barbearias de luxo a barbeiros de bairro), e nível de experiência (novos no ramo a veteranos com décadas de profissão). Os insights mais valiosos serão apresentados na reunião para embasar as decisões de design e desenvolvimento.
+20. **Aprovação Explícita para Desenvolvimento:** Nenhuma linha de código para novas funcionalidades, alterações ou correções será escrita sem a aprovação explícita ("OK") do cliente. O fluxo de trabalho sempre culminará na apresentação de um plano de ação detalhado, e o desenvolvimento só começará após o recebimento dessa aprovação.
 
 ## Cenários para Teste
 
-1.  **Validação de Clientes:**
-    - Acessar a tela "Clientes" e clicar em "Novo Cliente".
-    - Tentar salvar um cliente com um e-mail que já existe. Verificar se a mensagem de erro "Este e-mail já está em uso" é exibida.
-    - Tentar salvar um cliente com um telefone que já existe. Verificar se a mensagem de erro "Este telefone já está em uso" é exibida.
-    - Abrir os detalhes de um cliente, clicar em "Editar" e alterar o e-mail para um que pertence a outro cliente. Tentar salvar e verificar a mensagem de erro.
-
-2.  **Validação de Serviços:**
-    - Acessar a tela "Serviços" e clicar em "Novo Serviço".
-    - Tentar salvar um serviço com um nome que já existe (ex: "Corte"). Verificar se a mensagem de erro "Este nome de serviço já existe" é exibida.
-
-3.  **Validação de Equipe:**
-    - Acessar a tela "Equipe" e clicar em "Novo Profissional".
-    - Tentar salvar um profissional com um e-mail que já existe. Verificar se a mensagem de erro "Este e-mail já está em uso" é exibida.
-    - Tentar salvar um profissional sem preencher o telefone. Verificar se a mensagem de erro "O telefone é obrigatório." é exibida.
-    - Preencher todos os campos obrigatórios e verificar se o cadastro é concluído com sucesso.
-
 ---- 
 Historico do que está sendo realizado:
-Implementação de validações de unicidade para clientes (e-mail/telefone), serviços (nome) e equipe (e-mail). Adicionado campo opcional de telefone para membros da equipe.
-Revisão da regra de negócio: campo de telefone para membros da equipe agora é obrigatório, com validação e máscara de formatação.
