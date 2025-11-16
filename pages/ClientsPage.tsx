@@ -24,7 +24,8 @@ const ClientModal: React.FC<{
     onClose: () => void;
     onSave: (client: Client) => void;
     client: Partial<Client> | null;
-}> = ({ isOpen, onClose, onSave, client }) => {
+    clients: Client[];
+}> = ({ isOpen, onClose, onSave, client, clients }) => {
     const [formData, setFormData] = useState<Partial<Client>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,9 +72,17 @@ const ClientModal: React.FC<{
         const validationErrors: Record<string, string> = {};
         const requiredFields: (keyof Client)[] = ['name', 'email', 'phone'];
 
+        const normalizedPhone = formData.phone?.replace(/\D/g, '') || '';
+        if (clients.some(c => c.email.toLowerCase() === formData.email?.toLowerCase())) {
+            validationErrors.email = 'Este e-mail já está em uso.';
+        }
+        if (clients.some(c => c.phone.replace(/\D/g, '') === normalizedPhone)) {
+             validationErrors.phone = 'Este telefone já está em uso.';
+        }
+
         requiredFields.forEach(key => {
             const error = validateField(key, formData[key]);
-            if (error) validationErrors[key] = error;
+            if (error && !validationErrors[key]) validationErrors[key] = error;
         });
 
         setErrors(validationErrors);
@@ -100,35 +109,41 @@ const ClientModal: React.FC<{
 
     if (!isOpen) return null;
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                 <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Novo Cliente</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                    <div>
-                        <label className={labelClasses}>Nome</label>
-                        <input type="text" name="name" placeholder="Nome completo do cliente" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                        <FormError message={errors.name} />
+                <form onSubmit={handleSubmit} noValidate>
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <label className={labelClasses}>Nome</label>
+                            <input type="text" name="name" placeholder="Nome completo do cliente" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                            <FormError message={errors.name} />
+                        </div>
+                         <div>
+                            <label className={labelClasses}>Telefone</label>
+                            <input type="tel" name="phone" placeholder="(00) 00000-0000" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} />
+                            <FormError message={errors.phone} />
+                        </div>
+                         <div>
+                            <label className={labelClasses}>E-mail</label>
+                            <input type="email" name="email" placeholder="email@exemplo.com" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                            <FormError message={errors.email} />
+                        </div>
                     </div>
-                     <div>
-                        <label className={labelClasses}>Email</label>
-                        <input type="email" name="email" placeholder="exemplo@email.com" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                        <FormError message={errors.email} />
-                    </div>
-                     <div>
-                        <label className={labelClasses}>Telefone</label>
-                        <input type="tel" name="phone" placeholder="(11) 99999-9999" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} maxLength={16} />
-                        <FormError message={errors.phone} />
-                    </div>
-                    <div className="flex justify-end space-x-4 pt-4">
-                        <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                        <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
+                    <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300">
+                            Cancelar
+                        </button>
+                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300">
+                            Salvar
+                        </button>
                     </div>
                 </form>
             </div>
@@ -142,7 +157,8 @@ const ClientDetailsModal: React.FC<{
     onClose: () => void;
     onSave: (client: Client) => void;
     client: Client | null;
-}> = ({ isOpen, onClose, onSave, client }) => {
+    clients: Client[];
+}> = ({ isOpen, onClose, onSave, client, clients }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Client>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -205,9 +221,18 @@ const ClientDetailsModal: React.FC<{
     const handleSave = () => {
         const validationErrors: Record<string, string> = {};
         const requiredFields: (keyof Client)[] = ['name', 'email', 'phone'];
+
+        const normalizedPhone = formData.phone?.replace(/\D/g, '') || '';
+        if (clients.some(c => c.id !== formData.id && c.email.toLowerCase() === formData.email?.toLowerCase())) {
+            validationErrors.email = 'Este e-mail já está em uso.';
+        }
+        if (clients.some(c => c.id !== formData.id && c.phone.replace(/\D/g, '') === normalizedPhone)) {
+             validationErrors.phone = 'Este telefone já está em uso.';
+        }
+
         requiredFields.forEach(key => {
             const error = validateField(key, formData[key]);
-            if (error) validationErrors[key] = error;
+            if (error && !validationErrors[key]) validationErrors[key] = error;
         });
 
         setErrors(validationErrors);
@@ -225,34 +250,34 @@ const ClientDetailsModal: React.FC<{
 
     if (!isOpen || !client) return null;
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-200 disabled:text-gray-500";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 disabled:bg-gray-100 disabled:text-gray-500 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
     const toggleBgClass = formData.status === 'active' 
         ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
         : 'bg-gray-200';
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Cliente</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <div className="space-y-4">
+                <div className="p-6 space-y-4">
                     <div>
                         <label className={labelClasses}>Nome</label>
                         <input type="text" name="name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
                         <FormError message={errors.name} />
                     </div>
                     <div>
-                        <label className={labelClasses}>Email</label>
-                        <input type="email" name="email" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
-                        <FormError message={errors.email} />
-                    </div>
-                    <div>
                         <label className={labelClasses}>Telefone</label>
                         <input type="tel" name="phone" value={formData.phone || ''} onChange={handlePhoneChange} onBlur={handleBlur} className={inputClasses} maxLength={16} disabled={!isEditing} />
                         <FormError message={errors.phone} />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Email</label>
+                        <input type="email" name="email" value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                        <FormError message={errors.email} />
                     </div>
                     <div className="border-t pt-4">
                         <label htmlFor="client-status-toggle" className={`flex items-center justify-between ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
@@ -264,16 +289,16 @@ const ClientDetailsModal: React.FC<{
                         <input id="client-status-toggle" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                     </div>
                 </div>
-                <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200 space-x-3">
+                <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
                     {isEditing ? (
                         <>
-                            <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
-                            <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                            <button onClick={handleCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                            <button onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
                         </>
                     ) : (
                         <>
-                            <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
-                            <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
+                            <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                            <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
                         </>
                     )}
                 </div>
@@ -477,6 +502,7 @@ const ClientsPage: React.FC = () => {
                 await api.createClient(clientToSave);
                 showToast('Cliente salvo com sucesso!', 'success');
                 setIsCreateModalOpen(false);
+                setSortConfig({ key: 'name', direction: 'ascending' });
                 fetchClients();
             }
         } catch (error) {
@@ -602,7 +628,7 @@ const ClientsPage: React.FC = () => {
             </div>
             
             {currentUserPermissions?.canCreateClient && (
-                <ClientModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} client={{ name: '', email: '', phone: '', status: 'active' }} />
+                <ClientModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} client={{ name: '', email: '', phone: '', status: 'active' }} clients={clients} />
             )}
             
             <ClientDetailsModal 
@@ -610,6 +636,7 @@ const ClientsPage: React.FC = () => {
                 onClose={() => setIsDetailsModalOpen(false)}
                 client={selectedClient}
                 onSave={handleSave}
+                clients={clients}
             />
 
             <ConfirmationModal

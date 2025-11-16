@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useEffect, useMemo, useContext } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
@@ -33,45 +31,53 @@ const TransactionModal: React.FC<{
         onClose();
     };
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Nova Transação</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className={labelClasses}>Descrição</label>
-                        <input type="text" placeholder="Descrição da transação" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <label className={labelClasses}>Descrição</label>
+                            <input type="text" placeholder="Ex: Venda de produto" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={inputClasses} />
+                        </div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelClasses}>Valor (R$)</label>
+                                <input type="number" placeholder="0,00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className={inputClasses} />
+                            </div>
+                             <div>
+                                <label className={labelClasses}>Tipo</label>
+                                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TransactionType})} className={inputClasses}>
+                                    <option value={TransactionType.INCOME}>Entrada</option>
+                                    <option value={TransactionType.EXPENSE}>Saída</option>
+                                </select>
+                            </div>
+                        </div>
+                         <div>
+                            <label className={labelClasses}>Método de Pagamento</label>
+                            <select value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})} className={inputClasses}>
+                                <option>Pix</option>
+                                <option>Cartão de Crédito</option>
+                                <option>Cartão de Débito</option>
+                                <option>Dinheiro</option>
+                                <option>Retirada</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label className={labelClasses}>Valor (R$)</label>
-                        <input type="number" placeholder="0.00" step="0.01" required value={formData.value || ''} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                    </div>
-                     <div>
-                        <label className={labelClasses}>Tipo</label>
-                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TransactionType})} className={inputClasses}>
-                            <option value={TransactionType.INCOME}>Entrada</option>
-                            <option value={TransactionType.EXPENSE}>Saída</option>
-                        </select>
-                    </div>
-                     <div>
-                        <label className={labelClasses}>Método de Pagamento</label>
-                        <select value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})} className={inputClasses}>
-                            <option>Pix</option>
-                            <option>Cartão de Crédito</option>
-                            <option>Cartão de Débito</option>
-                            <option>Dinheiro</option>
-                            <option>Retirada</option>
-                        </select>
-                    </div>
-                    <div className="flex justify-end space-x-4 pt-4">
-                         <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                        <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
+                    <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
+                         <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">
+                            Cancelar
+                        </button>
+                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                            Salvar
+                        </button>
                     </div>
                 </form>
             </div>

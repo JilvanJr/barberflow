@@ -90,24 +90,24 @@ export const DEFAULT_OPERATING_HOURS: OperatingHours = {
 
 
 export const USERS: User[] = [
-  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', role: Role.ADMIN, password: 'admin', permissions: fullAdminPermissions, status: 'active', jobTitle: 'Admin', accessProfile: 'Admin', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', role: Role.BARBER, password: 'barber', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 3, name: 'Recepcionista Ana', email: 'recepcao@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', role: Role.BARBER, password: 'recepcao', permissions: receptionistPermissions, status: 'active', jobTitle: 'Recepcionista', accessProfile: 'Recepcionista', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 4, name: 'Barbeiro 1', email: 'b1@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber1', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 5, name: 'Barbeiro 3', email: 'b3@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber3', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '15:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
-  { id: 6, name: 'Barbeiro 4', email: 'b4@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber4', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'inactive', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '13:00', lunchEndTime: '14:00' },
+  { id: 1, name: 'Natan Borges', email: 'admin@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=natan', phone: '(11) 98765-4321', role: Role.ADMIN, password: 'admin', permissions: fullAdminPermissions, status: 'active', jobTitle: 'Admin', accessProfile: 'Admin', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 2, name: 'Barbeiro Dois', email: 'barber@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber2', phone: '(11) 98765-4322', role: Role.BARBER, password: 'barber', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 3, name: 'Recepcionista Ana', email: 'recepcao@barberflow.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', phone: '(11) 98765-4323', role: Role.BARBER, password: 'recepcao', permissions: receptionistPermissions, status: 'active', jobTitle: 'Recepcionista', accessProfile: 'Recepcionista', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 4, name: 'Barbeiro 1', email: 'b1@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber1', phone: '(11) 98765-4324', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 5, name: 'Barbeiro 3', email: 'b3@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber3', phone: '(11) 98765-4325', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'active', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '15:00', lunchStartTime: '12:00', lunchEndTime: '13:00' },
+  { id: 6, name: 'Barbeiro 4', email: 'b4@email.com', avatarUrl: 'https://i.pravatar.cc/150?u=barber4', phone: '(11) 98765-4326', role: Role.BARBER, password: 'password', permissions: defaultBarberPermissions, status: 'inactive', jobTitle: 'Barbeiro', accessProfile: 'Barbeiro', workStartTime: '09:00', workEndTime: '19:00', lunchStartTime: '13:00', lunchEndTime: '14:00' },
 ];
 
 export const CLIENTS: Client[] = [
   { id: 1, name: 'Manuel Neuer', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'client@barberflow.com', cpf: '111.111.111-11', password: 'client', role: Role.CLIENT, status: 'active' },
-  { id: 2, name: 'Lionel Messi', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'messi@email.com', cpf: '222.222.222-22', role: Role.CLIENT, status: 'active' },
-  { id: 3, name: 'Harry Kane', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'kane@email.com', cpf: '333.333.333-33', role: Role.CLIENT, status: 'active' },
-  { id: 4, name: 'Roberto Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'roberto@email.com', cpf: '444.444.444-44', role: Role.CLIENT, status: 'inactive' },
-  { id: 5, name: 'Renato Torres', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'renato@email.com', cpf: '555.555.555-55', role: Role.CLIENT, status: 'active' },
-  { id: 6, name: 'Yago Oproprio', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'yago@email.com', cpf: '666.666.666-66', role: Role.CLIENT, status: 'active' },
-  { id: 7, name: 'Luccas Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'luccas@email.com', cpf: '777.777.777-77', role: Role.CLIENT, status: 'active' },
-  { id: 8, name: 'Filipe Ret', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'filipe@email.com', cpf: '888.888.888-88', role: Role.CLIENT, status: 'inactive' },
-  { id: 9, name: 'Teto', birthDate: '01/01/2000', phone: '(11) 91234-5678', email: 'teto@email.com', cpf: '999.999.999-99', role: Role.CLIENT, status: 'active' },
+  { id: 2, name: 'Lionel Messi', birthDate: '01/01/2000', phone: '(11) 91234-5679', email: 'messi@email.com', cpf: '222.222.222-22', role: Role.CLIENT, status: 'active' },
+  { id: 3, name: 'Harry Kane', birthDate: '01/01/2000', phone: '(11) 91234-5610', email: 'kane@email.com', cpf: '333.333.333-33', role: Role.CLIENT, status: 'active' },
+  { id: 4, name: 'Roberto Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5611', email: 'roberto@email.com', cpf: '444.444.444-44', role: Role.CLIENT, status: 'inactive' },
+  { id: 5, name: 'Renato Torres', birthDate: '01/01/2000', phone: '(11) 91234-5612', email: 'renato@email.com', cpf: '555.555.555-55', role: Role.CLIENT, status: 'active' },
+  { id: 6, name: 'Yago Oproprio', birthDate: '01/01/2000', phone: '(11) 91234-5613', email: 'yago@email.com', cpf: '666.666.666-66', role: Role.CLIENT, status: 'active' },
+  { id: 7, name: 'Luccas Carlos', birthDate: '01/01/2000', phone: '(11) 91234-5614', email: 'luccas@email.com', cpf: '777.777.777-77', role: Role.CLIENT, status: 'active' },
+  { id: 8, name: 'Filipe Ret', birthDate: '01/01/2000', phone: '(11) 91234-5615', email: 'filipe@email.com', cpf: '888.888.888-88', role: Role.CLIENT, status: 'inactive' },
+  { id: 9, name: 'Teto', birthDate: '01/01/2000', phone: '(11) 91234-5616', email: 'teto@email.com', cpf: '999.999.999-99', role: Role.CLIENT, status: 'active' },
 ];
 
 export const SERVICES: Service[] = [

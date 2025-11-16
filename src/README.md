@@ -45,8 +45,27 @@ Esta seção contém as regras e padrões a serem seguidos durante o desenvolvim
 15. **Criação de Cenários de Teste:** Para cada nova funcionalidade, alteração ou correção implementada, um ou mais cenários de teste básicos devem ser criados e adicionados a uma nova seção no `README.md` chamada "Cenários para Teste". Estes cenários devem descrever os passos para validar a implementação (ex: "Acessar a tela X, clicar no botão Y, verificar se o modal Z é exibido"). Esta seção, assim como o histórico de commits, deve ser limpa após a confirmação do commit.
 16. **Carregamento de Dados de Teste na Agenda:** Para facilitar os testes, ao carregar a aplicação pela primeira vez em uma sessão, o sistema deve simular o carregamento de agendamentos. Esta regra deve respeitar o horário de funcionamento: se o dia de "hoje" for um dia em que a barbearia está fechada (ex: Domingo), os agendamentos de teste devem ser criados para o próximo dia útil. A HomePage e a Agenda já devem iniciar com os dados populados no dia correto. Esta funcionalidade é exclusiva para o ambiente de desenvolvimento e será removida na integração com o backend real.
 17. **Visualização de Histórico na Agenda:** É permitido navegar para datas passadas na agenda. Nessas datas, a interface entrará em "modo de consulta", desabilitando todas as ações de criação ou edição (ex: botão "Novo Agendamento", clique em horários vagos) e exibindo os agendamentos passados em um estilo "somente leitura" não interativo.
+18. **Padrão Visual de Modais:** Todos os modais de formulário (criação e edição) devem seguir uma estrutura visual padronizada: um cabeçalho com título e botão de fechar (ícone 'X'); corpo com formulário; e um rodapé com botões de ação (ex: 'Cancelar', 'Salvar') alinhados à direita. O botão da ação primária deve sempre ter o maior destaque visual (cor `bg-blue-600`).
 
 ## Cenários para Teste
 
+1.  **Validação de Clientes:**
+    - Acessar a tela "Clientes" e clicar em "Novo Cliente".
+    - Tentar salvar um cliente com um e-mail que já existe. Verificar se a mensagem de erro "Este e-mail já está em uso" é exibida.
+    - Tentar salvar um cliente com um telefone que já existe. Verificar se a mensagem de erro "Este telefone já está em uso" é exibida.
+    - Abrir os detalhes de um cliente, clicar em "Editar" e alterar o e-mail para um que pertence a outro cliente. Tentar salvar e verificar a mensagem de erro.
+
+2.  **Validação de Serviços:**
+    - Acessar a tela "Serviços" e clicar em "Novo Serviço".
+    - Tentar salvar um serviço com um nome que já existe (ex: "Corte"). Verificar se a mensagem de erro "Este nome de serviço já existe" é exibida.
+
+3.  **Validação de Equipe:**
+    - Acessar a tela "Equipe" e clicar em "Novo Profissional".
+    - Tentar salvar um profissional com um e-mail que já existe. Verificar se a mensagem de erro "Este e-mail já está em uso" é exibida.
+    - Tentar salvar um profissional sem preencher o telefone. Verificar se a mensagem de erro "O telefone é obrigatório." é exibida.
+    - Preencher todos os campos obrigatórios e verificar se o cadastro é concluído com sucesso.
+
 ---- 
 Historico do que está sendo realizado:
+Implementação de validações de unicidade para clientes (e-mail/telefone), serviços (nome) e equipe (e-mail). Adicionado campo opcional de telefone para membros da equipe.
+Revisão da regra de negócio: campo de telefone para membros da equipe agora é obrigatório, com validação e máscara de formatação.

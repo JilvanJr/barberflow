@@ -37,6 +37,7 @@ export interface User {
   name: string;
   email: string;
   avatarUrl: string;
+  phone?: string;
   role: Role.ADMIN | Role.BARBER;
   password?: string;
   permissions: Permissions;

@@ -23,7 +23,8 @@ const ServiceModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (service: Service) => void;
-}> = ({ isOpen, onClose, onSave }) => {
+    services: Service[];
+}> = ({ isOpen, onClose, onSave, services }) => {
     const [formData, setFormData] = useState<Partial<Service>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -74,9 +75,14 @@ const ServiceModal: React.FC<{
         const validationErrors: Record<string, string> = {};
         const fieldsToValidate: (keyof Service)[] = ['name', 'price', 'duration'];
         
+        const trimmedName = formData.name?.trim().toLowerCase() || '';
+        if (services.some(s => s.name.trim().toLowerCase() === trimmedName)) {
+            validationErrors.name = 'Este nome de serviço já existe.';
+        }
+        
         fieldsToValidate.forEach(key => {
             const error = validateField(key, formData[key]);
-            if(error) validationErrors[key] = error;
+            if(error && !validationErrors[key]) validationErrors[key] = error;
         });
 
         setErrors(validationErrors);
@@ -92,35 +98,43 @@ const ServiceModal: React.FC<{
     
     if (!isOpen) return null;
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                 <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Novo Serviço</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                    <div>
-                        <label className={labelClasses}>Nome do Serviço</label>
-                        <input type="text" name="name" placeholder="Nome do serviço" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                        <FormError message={errors.name} />
+                <form onSubmit={handleSubmit} noValidate>
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <label className={labelClasses}>Nome do Serviço</label>
+                            <input type="text" name="name" placeholder="Ex: Corte de Cabelo" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                            <FormError message={errors.name} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelClasses}>Preço (R$)</label>
+                                <input type="number" name="price" step="0.01" placeholder="0,00" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                                <FormError message={errors.price} />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Duração (minutos)</label>
+                                <input type="number" name="duration" placeholder="30" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} />
+                                <FormError message={errors.duration} />
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label className={labelClasses}>Preço (R$)</label>
-                        <input type="number" name="price" step="0.01" placeholder="0.00" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                        <FormError message={errors.price} />
-                    </div>
-                    <div>
-                        <label className={labelClasses}>Duração (minutos)</label>
-                        <input type="number" name="duration" placeholder="30" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={`${inputClasses} placeholder:italic placeholder:text-gray-400`} />
-                        <FormError message={errors.duration} />
-                    </div>
-                    <div className="flex justify-end space-x-4 pt-4">
-                        <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                        <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar</button>
+                    <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">
+                            Cancelar
+                        </button>
+                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                            Salvar
+                        </button>
                     </div>
                 </form>
             </div>
@@ -134,7 +148,8 @@ const ServiceDetailsModal: React.FC<{
     onClose: () => void;
     onSave: (service: Service) => void;
     service: Service | null;
-}> = ({ isOpen, onClose, onSave, service }) => {
+    services: Service[];
+}> = ({ isOpen, onClose, onSave, service, services }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Service>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -185,9 +200,15 @@ const ServiceDetailsModal: React.FC<{
     const handleSave = () => {
         const validationErrors: Record<string, string> = {};
         const fieldsToValidate: (keyof Service)[] = ['name', 'price', 'duration'];
+        
+        const trimmedName = formData.name?.trim().toLowerCase() || '';
+        if (services.some(s => s.id !== formData.id && s.name.trim().toLowerCase() === trimmedName)) {
+            validationErrors.name = 'Este nome de serviço já existe.';
+        }
+        
         fieldsToValidate.forEach(key => {
             const error = validateField(key, formData[key]);
-            if (error) validationErrors[key] = error;
+            if (error && !validationErrors[key]) validationErrors[key] = error;
         });
 
         setErrors(validationErrors);
@@ -205,34 +226,36 @@ const ServiceDetailsModal: React.FC<{
 
     if (!isOpen || !service) return null;
 
-    const inputClasses = "w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-200 disabled:text-gray-500";
-    const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 disabled:bg-gray-100 disabled:text-gray-500 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
     const toggleBgClass = formData.status === 'active' 
         ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
         : 'bg-gray-200';
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all">
-                <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-md transform transition-all">
+                <div className="flex justify-between items-center p-6 border-b">
                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Serviço</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <div className="space-y-4">
+                <div className="p-6 space-y-4">
                      <div>
                         <label className={labelClasses}>Nome do Serviço</label>
                         <input type="text" name="name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
                         <FormError message={errors.name} />
                     </div>
-                    <div>
-                        <label className={labelClasses}>Preço (R$)</label>
-                        <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
-                        <FormError message={errors.price} />
-                    </div>
-                    <div>
-                        <label className={labelClasses}>Duração (minutos)</label>
-                        <input type="number" name="duration" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
-                        <FormError message={errors.duration} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClasses}>Preço (R$)</label>
+                            <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={e => handleInputChange('price', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                            <FormError message={errors.price} />
+                        </div>
+                        <div>
+                            <label className={labelClasses}>Duração (minutos)</label>
+                            <input type="number" name="duration" value={formData.duration || ''} onChange={e => handleInputChange('duration', e.target.value)} onBlur={handleBlur} className={inputClasses} disabled={!isEditing} />
+                            <FormError message={errors.duration} />
+                        </div>
                     </div>
                     <div className="border-t pt-4">
                          <label htmlFor="service-status-toggle" className={`flex items-center justify-between ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
@@ -244,16 +267,16 @@ const ServiceDetailsModal: React.FC<{
                          <input id="service-status-toggle" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                     </div>
                 </div>
-                <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200 space-x-3">
+                <div className="flex justify-end items-center space-x-3 p-6 bg-gray-50 border-t">
                     {isEditing ? (
                         <>
-                            <button onClick={handleCancel} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Cancelar</button>
-                            <button onClick={handleSave} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                            <button onClick={handleCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                            <button onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
                         </>
                     ) : (
                         <>
-                            <button onClick={onClose} className="px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Fechar</button>
-                            <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Editar</button>
+                            <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                            <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
                         </>
                     )}
                 </div>
@@ -431,6 +454,7 @@ const ServicesPage: React.FC = () => {
                 await api.createService(serviceToSave);
                 showToast('Serviço salvo com sucesso!', 'success');
                 setIsCreateModalOpen(false);
+                setSortConfig({ key: 'name', direction: 'ascending' });
                 fetchServices();
             }
         } catch(error) {
@@ -547,7 +571,7 @@ const ServicesPage: React.FC = () => {
             </div>
 
              {currentUserPermissions?.canCreateService && (
-                <ServiceModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} />
+                <ServiceModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleSave} services={services} />
              )}
             
             <ServiceDetailsModal 
@@ -555,6 +579,7 @@ const ServicesPage: React.FC = () => {
                 onClose={() => setIsDetailsModalOpen(false)}
                 service={selectedService}
                 onSave={handleSave}
+                services={services}
             />
 
              <ConfirmationModal

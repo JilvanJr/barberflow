@@ -1,13 +1,22 @@
-
-
 import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-// FIX: Removed unused UserSchedule import.
 import { User, Role } from '../types';
 import { PlusIcon, XIcon, ShieldCheckIcon, SearchIcon, ClockIcon, ImageIcon, EditIcon, EyeIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
 type StatusFilterType = 'all' | 'active' | 'inactive';
+
+const FormError: React.FC<{ message?: string }> = ({ message }) => {
+    if (!message) return null;
+    return (
+        <div className="flex items-center text-red-600 text-xs mt-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>{message}</span>
+        </div>
+    );
+};
 
 const FilterButton: React.FC<{
     filter: StatusFilterType;
@@ -23,18 +32,17 @@ const FilterButton: React.FC<{
     </button>
 );
 
-// FIX: Moved TimeInput component to module scope to avoid re-definition on render.
 const TimeInput: React.FC<{label: string, value: string, onChange: (val: string) => void, disabled?: boolean}> = ({label, value, onChange, disabled}) => (
     <div className="relative">
-         <label className="text-sm font-medium text-gray-700">{label}</label>
-        <div className="relative mt-1">
+         <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+        <div className="relative">
             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
                 type="time"
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 disabled={disabled}
-                className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2 text-left focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500 text-gray-900"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pl-9 disabled:bg-gray-100 disabled:text-gray-500"
             />
         </div>
     </div>
@@ -44,15 +52,17 @@ const NewTeamMemberModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (user: Partial<User>) => void;
-}> = ({ isOpen, onClose, onSave }) => {
+    users: User[];
+}> = ({ isOpen, onClose, onSave, users }) => {
     const [formData, setFormData] = useState<Partial<User>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if(isOpen) {
-            // Reset form
             setFormData({
                 name: '',
                 email: '',
+                phone: '',
                 jobTitle: 'Barbeiro',
                 accessProfile: 'Barbeiro',
                 avatarUrl: '',
@@ -61,6 +71,7 @@ const NewTeamMemberModal: React.FC<{
                 lunchStartTime: '12:00',
                 lunchEndTime: '13:00',
             });
+            setErrors({});
         }
     }, [isOpen]);
 
@@ -68,40 +79,95 @@ const NewTeamMemberModal: React.FC<{
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        const validationErrors: Record<string, string> = {};
+        const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
+
+        if (!formData.name?.trim()) {
+            validationErrors.name = 'O nome é obrigatório.';
+        }
+        if (!formData.email?.trim()) {
+            validationErrors.email = 'O e-mail é obrigatório.';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            validationErrors.email = 'Formato de e-mail inválido.';
+        } else if (users.some(u => u.email.toLowerCase() === formData.email?.toLowerCase())) {
+            validationErrors.email = 'Este e-mail já está em uso.';
+        }
+        
+        if (!phoneDigits) {
+            validationErrors.phone = 'O telefone é obrigatório.';
+        } else if (phoneDigits.length < 10) {
+            validationErrors.phone = 'O telefone deve ter no mínimo 10 dígitos.';
+        }
+
+
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length === 0) {
+            onSave(formData);
+        }
     };
 
     const handleInputChange = (field: keyof User, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+    
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.substring(0, 11);
+        
+        let formattedValue;
+        if (value.length <= 2) {
+            formattedValue = `(${value}`;
+        } else if (value.length <= 7) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+        } else {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+        }
+        handleInputChange('phone', formattedValue);
     };
 
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
+
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-start pt-16 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-                <div className="px-6 py-4 border-b">
-                     <h2 className="text-xl font-bold text-gray-800">Novo Profissional</h2>
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+                <div className="flex justify-between items-center p-6 border-b">
+                    <h2 className="text-2xl font-bold text-gray-800">Novo Profissional</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden" noValidate>
+                    <div className="p-6 space-y-5 overflow-y-auto">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Nome</label>
-                            <input type="text" placeholder="Nome do profissional" required value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder:italic placeholder:text-gray-400" />
-                        </div>
-                         <div>
-                            <label className="block text-sm font-medium text-gray-700">E-mail</label>
-                            <input type="email" placeholder="E-mail do profissional (será utilizado para acesso)" required value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder:italic placeholder:text-gray-400" />
+                            <label className={labelClasses}>Nome</label>
+                            <input type="text" placeholder="Nome completo do profissional" required value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className={inputClasses} />
+                            <FormError message={errors.name} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Função</label>
-                                <select value={formData.jobTitle || 'Barbeiro'} onChange={e => handleInputChange('jobTitle', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <label className={labelClasses}>E-mail</label>
+                                <input type="email" placeholder="E-mail de acesso" required value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} className={inputClasses} />
+                                <FormError message={errors.email} />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Telefone</label>
+                                <input type="tel" placeholder="(00) 00000-0000" required value={formData.phone || ''} onChange={handlePhoneChange} className={inputClasses} maxLength={16}/>
+                                <FormError message={errors.phone} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelClasses}>Função</label>
+                                <select value={formData.jobTitle || 'Barbeiro'} onChange={e => handleInputChange('jobTitle', e.target.value)} className={inputClasses}>
                                     <option>Barbeiro</option>
                                     <option>Recepcionista</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Perfil de acesso</label>
-                                <select value={formData.accessProfile || 'Barbeiro'} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <label className={labelClasses}>Perfil de acesso</label>
+                                <select value={formData.accessProfile || 'Barbeiro'} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className={inputClasses}>
                                     <option>Admin</option>
                                     <option>Barbeiro</option>
                                     <option>Recepcionista</option>
@@ -111,33 +177,37 @@ const NewTeamMemberModal: React.FC<{
                         
                         {formData.accessProfile !== 'Admin' && (
                             <>
-                                <div className="border-t pt-4">
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Jornada</p>
+                                <div className="border-t pt-5">
+                                    <p className="text-base font-medium text-gray-800 mb-2">Jornada de Trabalho</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
-                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} />
+                                        <TimeInput label="Início do expediente" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} />
+                                        <TimeInput label="Fim do expediente" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} />
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Almoço</p>
+                                    <p className="text-base font-medium text-gray-800 mb-2">Intervalo (Almoço)</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                    <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} />
-                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} />
+                                    <TimeInput label="Início do intervalo" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} />
+                                        <TimeInput label="Fim do intervalo" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} />
                                     </div>
                                 </div>
                             </>
                         )}
 
-                        <div className="border-t pt-4">
-                           <button type="button" className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        <div className="border-t pt-5">
+                           <button type="button" className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                                 <ImageIcon className="w-5 h-5 text-gray-500"/>
                                 Importar foto
                            </button>
                         </div>
                     </div>
-                    <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                        <button type="button" onClick={onClose} className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Cancelar</button>
-                        <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-sm">Salvar</button>
+                    <div className="p-6 flex justify-end items-center space-x-3 bg-gray-50 border-t">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">
+                            Cancelar
+                        </button>
+                        <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                            Salvar
+                        </button>
                     </div>
                 </form>
             </div>
@@ -150,67 +220,111 @@ const TeamMemberDetailsModal: React.FC<{
     onClose: () => void;
     onSave: (user: User) => void;
     user: User | null;
-}> = ({ isOpen, onClose, onSave, user }) => {
+    users: User[];
+}> = ({ isOpen, onClose, onSave, user, users }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<User>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
     
     useEffect(() => {
         if(user) {
             setFormData(user);
         }
+        setErrors({});
         setIsEditing(false);
     }, [user, isOpen]);
 
     if (!isOpen || !user) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData as User);
-        setIsEditing(false);
+    const handleSave = () => {
+        const validationErrors: Record<string, string> = {};
+        const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
+
+        if (!formData.name?.trim()) {
+            validationErrors.name = 'O nome é obrigatório.';
+        }
+         if (!phoneDigits) {
+            validationErrors.phone = 'O telefone é obrigatório.';
+        } else if (phoneDigits.length < 10) {
+            validationErrors.phone = 'O telefone deve ter no mínimo 10 dígitos.';
+        }
+
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length === 0) {
+            onSave(formData as User);
+            setIsEditing(false);
+        }
     };
     
     const handleInputChange = (field: keyof User, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+        if(errors[field]) {
+            setErrors(prev => ({...prev, [field]: ''}));
+        }
+    };
+    
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.substring(0, 11);
+        let formattedValue;
+        if (value.length <= 2) {
+            formattedValue = `(${value}`;
+        } else if (value.length <= 7) {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+        } else {
+            formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+        }
+        handleInputChange('phone', formattedValue);
     };
 
     const handleCancel = () => {
         setIsEditing(false);
         if (user) setFormData(user);
+        setErrors({});
     }
 
+    const inputClasses = "w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 disabled:bg-gray-100 disabled:text-gray-500 placeholder:italic placeholder:text-gray-400";
+    const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
     const toggleBgClass = formData.status === 'active' 
         ? (isEditing ? 'bg-blue-600' : 'bg-gray-300') 
         : 'bg-gray-200';
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-start pt-16 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-                <div className="px-6 py-4 border-b flex justify-between items-center">
-                     <h2 className="text-xl font-bold text-gray-800">Detalhes do Profissional</h2>
-                    {!isEditing && <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"><EditIcon className="w-4 h-4" /> Editar</button>}
-                    {isEditing && <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-md">Editando...</span>}
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+                <div className="flex justify-between items-center p-6 border-b">
+                     <h2 className="text-2xl font-bold text-gray-800">Detalhes do Profissional</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
                 </div>
-                 <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-4">
+                 <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="p-6 space-y-4 overflow-y-auto">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Nome</label>
-                            <input type="text" disabled={!isEditing} value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500" />
+                            <label className={labelClasses}>Nome</label>
+                            <input type="text" disabled={!isEditing} value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} className={inputClasses} />
+                             <FormError message={errors.name} />
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-gray-700">E-mail</label>
-                            <input type="email" disabled value={formData.email || ''} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-500 sm:text-sm" />
+                        <div className="grid grid-cols-2 gap-4">
+                             <div>
+                                <label className={labelClasses}>E-mail</label>
+                                <input type="email" disabled value={formData.email || ''} className={`${inputClasses} cursor-not-allowed`} />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Telefone</label>
+                                <input type="tel" disabled={!isEditing} placeholder="(00) 00000-0000" value={formData.phone || ''} onChange={handlePhoneChange} className={inputClasses} maxLength={16}/>
+                                <FormError message={errors.phone} />
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Função</label>
-                                <select disabled={!isEditing} value={formData.jobTitle || ''} onChange={e => handleInputChange('jobTitle', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                                <label className={labelClasses}>Função</label>
+                                <select disabled={!isEditing} value={formData.jobTitle || ''} onChange={e => handleInputChange('jobTitle', e.target.value)} className={inputClasses}>
                                     <option>Barbeiro</option>
                                     <option>Recepcionista</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Perfil de acesso</label>
-                                <select disabled={!isEditing} value={formData.accessProfile || ''} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                                <label className={labelClasses}>Perfil de acesso</label>
+                                <select disabled={!isEditing} value={formData.accessProfile || ''} onChange={e => handleInputChange('accessProfile', e.target.value as User['accessProfile'])} className={inputClasses}>
                                     <option>Admin</option>
                                     <option>Barbeiro</option>
                                     <option>Recepcionista</option>
@@ -221,17 +335,17 @@ const TeamMemberDetailsModal: React.FC<{
                         {formData.accessProfile !== 'Admin' && (
                             <>
                                 <div className="border-t pt-4">
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Jornada</p>
+                                    <p className="text-base font-medium text-gray-800 mb-2">Jornada de Trabalho</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <TimeInput label="Início" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} disabled={!isEditing} />
-                                        <TimeInput label="Fim" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Início do expediente" value={formData.workStartTime || ''} onChange={val => handleInputChange('workStartTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Fim do expediente" value={formData.workEndTime || ''} onChange={val => handleInputChange('workEndTime', val)} disabled={!isEditing} />
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Almoço</p>
+                                    <p className="text-base font-medium text-gray-800 mb-2">Intervalo (Almoço)</p>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <TimeInput label="Início" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} disabled={!isEditing} />
-                                        <TimeInput label="Fim" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Início do intervalo" value={formData.lunchStartTime || ''} onChange={val => handleInputChange('lunchStartTime', val)} disabled={!isEditing} />
+                                        <TimeInput label="Fim do intervalo" value={formData.lunchEndTime || ''} onChange={val => handleInputChange('lunchEndTime', val)} disabled={!isEditing} />
                                     </div>
                                 </div>
                             </>
@@ -247,17 +361,20 @@ const TeamMemberDetailsModal: React.FC<{
                              <input id="status" type="checkbox" className="sr-only" checked={formData.status === 'active'} disabled={!isEditing} onChange={e => handleInputChange('status', e.target.checked ? 'active' : 'inactive')} />
                          </div>
                     </div>
-                    <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                    <div className="p-6 bg-gray-50 border-t flex justify-end space-x-3">
                          {isEditing ? (
-                            <div className="flex w-full space-x-3">
-                                <button type="button" onClick={handleCancel} className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Cancelar</button>
-                                <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-sm">Salvar</button>
-                            </div>
+                            <>
+                                <button type="button" onClick={handleCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Cancelar</button>
+                                <button type="button" onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Alterações</button>
+                            </>
                         ) : (
-                             <button type="button" onClick={onClose} className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">Fechar</button>
+                            <>
+                                <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+                                <button type="button" onClick={() => setIsEditing(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Editar</button>
+                            </>
                         )}
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );
@@ -283,14 +400,14 @@ const TeamPage: React.FC = () => {
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
-            // In a real app, this would be api.getUsers(), but we get it from context
-            // For now, just end loading
+            const data = await api.getUsers();
+            setUsers(data);
         } catch (error) {
             console.error("Failed to fetch users", error);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [setUsers]);
 
     useEffect(() => {
         fetchUsers();
@@ -398,6 +515,7 @@ const TeamPage: React.FC = () => {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onSave={handleSave}
+                users={users}
             />
             
             <TeamMemberDetailsModal
@@ -405,6 +523,7 @@ const TeamPage: React.FC = () => {
                 onClose={() => setIsDetailsModalOpen(false)}
                 onSave={handleSave}
                 user={selectedUser}
+                users={users}
             />
         </div>
     );
