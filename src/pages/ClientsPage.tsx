@@ -334,10 +334,10 @@ const ConfirmationModal: React.FC<{
                     <AlertTriangleIcon className={`h-6 w-6 ${isDestructive ? 'text-red-600' : 'text-blue-600'}`} />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
+                <p className="text-gray-600 my-4 text-sm">{message}</p>
                 <div className="flex justify-center space-x-4">
-                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-36 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-36 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-36 bg-gray-200 text-gray-800 font-semibold text-sm rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-36 text-white font-semibold text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useContext, useRef } from 'react';
 import { AppContext } from '../App';
 import { api } from '../api';
-import { Transaction, TransactionType, Role, TransactionStatus } from '../types';
+import { Transaction, TransactionType, Role, TransactionStatus, User, Appointment } from '../types';
 import { PlusIcon, XIcon, SearchIcon, EyeIcon, BanIcon, CheckIcon, TrendingUpIcon, TrendingDownIcon, WalletIcon, AlertTriangleIcon, ClockIcon, CheckCircleIcon, CalendarIcon, FilterIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 
 type Period = 'hoje' | 'ontem' | 'semana' | 'mes' | 'custom';
@@ -61,16 +61,16 @@ const NewTransactionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSa
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Descrição</label>
-                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Venda de produto" className="w-full bg-white border border-gray-300 rounded-lg p-2.5 placeholder:italic placeholder:text-gray-400" />
+                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Venda de produto" className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5 placeholder:italic placeholder:text-gray-400" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Valor (R$)</label>
-                            <input type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="0,00" className="w-full bg-white border border-gray-300 rounded-lg p-2.5 placeholder:italic placeholder:text-gray-400" />
+                            <input type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="0,00" className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5 placeholder:italic placeholder:text-gray-400" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo</label>
-                            <select value={type} onChange={e => setType(e.target.value as TransactionType)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5">
+                            <select value={type} onChange={e => setType(e.target.value as TransactionType)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5">
                                 <option value={TransactionType.INCOME}>Entrada</option>
                                 <option value={TransactionType.EXPENSE}>Saída</option>
                             </select>
@@ -79,11 +79,11 @@ const NewTransactionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSa
                     <div className="grid grid-cols-2 gap-4">
                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Data</label>
-                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5" />
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Método de Pagamento</label>
-                            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5">
+                            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5">
                                 <option>Pix</option>
                                 <option>Dinheiro</option>
                                 <option>Cartão de Crédito</option>
@@ -103,28 +103,79 @@ const NewTransactionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSa
     );
 };
 
-const TransactionDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; transaction: Transaction | null; }> = ({ isOpen, onClose, transaction }) => {
+const TransactionDetailsModal: React.FC<{ 
+    isOpen: boolean; 
+    onClose: () => void; 
+    transaction: Transaction | null;
+    users: User[];
+    appointments: Appointment[];
+}> = ({ isOpen, onClose, transaction, users, appointments }) => {
     if (!isOpen || !transaction) return null;
+
+    // Find barber if transaction is from an appointment
+    const appointment = transaction.appointmentId ? appointments.find(a => a.id === transaction.appointmentId) : null;
+    const barber = appointment ? users.find(u => u.id === appointment.barberId) : null;
+
+    const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+        <div className="flex flex-col sm:flex-row sm:items-start text-sm leading-relaxed">
+            <span className="font-bold text-slate-700 sm:w-1/3 shrink-0">{label}:</span>
+            <span className="text-slate-600 sm:w-2/3">{value}</span>
+        </div>
+    );
+
+    const formattedDate = new Date(transaction.date + 'T00:00:00').toLocaleDateString('pt-BR');
+
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Detalhes da Transação</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button>
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                {/* Header */}
+                <div className="flex justify-between items-center px-8 py-6">
+                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Detalhes do Lançamento</h2>
+                    <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors">
+                        <XIcon className="w-6 h-6" />
+                    </button>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200 text-sm">
-                    <p><strong>ID:</strong> {transaction.id}</p>
-                    <p><strong>Nome:</strong> {transaction.name}</p>
-                    <p><strong>Descrição:</strong> {transaction.description}</p>
-                    <p><strong>Data:</strong> {new Date(transaction.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
-                    <p><strong>Valor:</strong> <span className={transaction.type === TransactionType.INCOME ? 'text-green-600' : 'text-red-600'}>R$ {transaction.value.toFixed(2).replace('.', ',')}</span></p>
-                    <p><strong>Tipo:</strong> {transaction.type}</p>
-                    <p><strong>Status:</strong> {transaction.status}</p>
-                    <p><strong>Método:</strong> {transaction.method}</p>
-                    {transaction.completedBy && <p><strong>Finalizado por:</strong> {transaction.completedBy}</p>}
-                </div>
-                 <div className="flex justify-center mt-6">
-                    <button onClick={onClose} className="w-36 text-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-100">Fechar</button>
+
+                {/* Content Box */}
+                <div className="px-8 pb-8">
+                    <div className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-6 space-y-4">
+                        <DetailItem label="ID" value={transaction.id} />
+                        <DetailItem label="Nome" value={transaction.name} />
+                        <DetailItem label="Descrição" value={transaction.description} />
+                        
+                        {transaction.appointmentId && (
+                            <DetailItem label="Atendido por" value={barber ? barber.name : 'Profissional não identificado'} />
+                        )}
+                        
+                        <DetailItem label="Data" value={formattedDate} />
+                        
+                        <DetailItem label="Valor" value={
+                            <span className={`font-bold ${transaction.type === TransactionType.INCOME ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                R$ {transaction.value.toFixed(2).replace('.', ',')}
+                            </span>
+                        } />
+                        
+                        <DetailItem label="Tipo" value={transaction.type} />
+                        <DetailItem label="Status" value={transaction.status} />
+                        <DetailItem label="Método" value={transaction.method} />
+                        
+                        {transaction.completedBy && (
+                            <DetailItem 
+                                label={transaction.status === 'Cancelado' ? 'Cancelado por' : 'Finalizado por'} 
+                                value={transaction.completedBy} 
+                            />
+                        )}
+                    </div>
+
+                    {/* Footer Action */}
+                    <div className="mt-8">
+                        <button 
+                            onClick={onClose} 
+                            className="w-full py-3.5 px-5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-[0.98]"
+                        >
+                            Fechar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -138,8 +189,8 @@ const ConfirmPaymentModal: React.FC<{ isOpen: boolean; onClose: () => void; onCo
         <div className="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
                 <h2 className="text-2xl font-bold text-gray-800">Finalizar Pagamento</h2>
-                <p className="text-gray-600 my-4">Selecione o método de pagamento para a transação de <span className="font-bold">{transaction.name}</span> no valor de R$ {transaction.value.toFixed(2)}.</p>
-                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5 mb-6">
+                <p className="text-gray-800 my-4 text-sm">Selecione o método de pagamento para a transação de <span className="font-bold">{transaction.name}</span> no valor de R$ {transaction.value.toFixed(2).replace('.', ',')}.</p>
+                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5 mb-6 text-sm text-gray-900">
                     <option>Pix</option>
                     <option>Dinheiro</option>
                     <option>Cartão de Crédito</option>
@@ -161,10 +212,10 @@ const ConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void; onConf
             <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md text-center">
                 <AlertTriangleIcon className="mx-auto w-12 h-12 text-red-500" />
                 <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
+                <p className="text-gray-600 my-4 text-sm">{message}</p>
                 <div className="flex items-center space-x-4">
-                    <button onClick={onClose} className="flex-1 px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">Não</button>
-                    <button onClick={onConfirm} className="flex-1 px-6 py-2.5 text-white font-semibold rounded-lg bg-red-600 hover:bg-red-700">Sim, Cancelar</button>
+                    <button onClick={onClose} className="flex-1 px-6 py-2.5 bg-gray-200 text-gray-800 font-semibold text-sm rounded-lg hover:bg-gray-300">Não</button>
+                    <button onClick={onConfirm} className="flex-1 px-6 py-2.5 text-white font-semibold text-sm rounded-lg bg-red-600 hover:bg-red-700">Sim, Cancelar</button>
                 </div>
             </div>
         </div>
@@ -197,11 +248,11 @@ const DateRangeModal: React.FC<{
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Data de Início</label>
-                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2.5" />
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Data Final</label>
-                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate} className="w-full bg-white border border-gray-300 rounded-lg p-2.5" />
+                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-2.5" />
                     </div>
                 </div>
                 <div className="flex items-center space-x-4 mt-8">
@@ -218,6 +269,8 @@ export const CashFlowPage: React.FC = () => {
     
     // Page state
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Filter states
@@ -248,10 +301,16 @@ export const CashFlowPage: React.FC = () => {
     const fetchTransactions = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await api.getTransactions();
-            setTransactions(data);
+            const [tData, uData, aData] = await Promise.all([
+                api.getTransactions(),
+                api.getUsers(),
+                api.getAppointments()
+            ]);
+            setTransactions(tData);
+            setUsers(uData);
+            setAppointments(aData);
         } catch (error) {
-            console.error("Failed to fetch transactions", error);
+            console.error("Failed to fetch transactions data", error);
         } finally {
             setIsLoading(false);
         }
@@ -428,7 +487,7 @@ export const CashFlowPage: React.FC = () => {
         );
     };
 
-    if (isLoading) return <div className="text-center p-8">Carregando fluxo de caixa...</div>;
+    if (isLoading) return <div className="text-center p-8 text-gray-700 font-semibold">Carregando fluxo de caixa...</div>;
     
     const customDateDisplay = customDateRange.start && customDateRange.end
     ? `${new Date(customDateRange.start + 'T00:00:00').toLocaleDateString('pt-BR')} - ${new Date(customDateRange.end + 'T00:00:00').toLocaleDateString('pt-BR')}`
@@ -453,7 +512,7 @@ export const CashFlowPage: React.FC = () => {
                     </div>
                 </div>
                 {canAddTransaction && (
-                     <button onClick={() => handleOpenModal('new')} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2">
+                     <button onClick={() => handleOpenModal('new')} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 shadow-sm">
                         <PlusIcon className="w-5 h-5" />
                         <span>Novo Lançamento</span>
                     </button>
@@ -485,33 +544,32 @@ export const CashFlowPage: React.FC = () => {
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow-sm border">
-                 <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-                    <div className="relative md:col-span-3">
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                    <div className="relative md:col-span-5">
                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input type="text" placeholder="Buscar por ID ou nome..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pl-10" />
                     </div>
-                    <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                        <option value="all">Tipo</option>
+                    <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="w-full md:col-span-2 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="all" hidden>Tipo</option>
                         <option value={TransactionType.INCOME}>Entrada</option>
                         <option value={TransactionType.EXPENSE}>Saída</option>
                     </select>
-                     <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                        <option value="all">Status</option>
+                     <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full md:col-span-2 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="all" hidden>Status</option>
                         <option value="Finalizado">Finalizado</option>
                         <option value="Pendente">Pendente</option>
                         <option value="Cancelado">Cancelado</option>
                     </select>
-                     <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                        <option value="all">Método</option>
+                     <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="w-full md:col-span-2 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="all" hidden>Método</option>
                         <option>Pix</option>
                         <option>Dinheiro</option>
                         <option>Cartão de Crédito</option>
                         <option>Cartão de Débito</option>
                         <option>Aguardando</option>
-                        <option>N/A</option>
                     </select>
-                    <button onClick={handleClearFilters} title="Limpar Filtros" className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 text-gray-600">
-                        <FilterIcon className="w-5 h-5 mx-auto"/>
+                    <button onClick={handleClearFilters} title="Limpar Filtros" className="w-full md:col-span-1 p-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 text-gray-600 flex items-center justify-center">
+                        <FilterIcon className="w-5 h-5"/>
                     </button>
                 </div>
             </div>
@@ -527,7 +585,7 @@ export const CashFlowPage: React.FC = () => {
                             <SortableHeader columnKey="value" title="Valor" />
                             <SortableHeader columnKey="type" title="Tipo" />
                             <SortableHeader columnKey="status" title="Status" />
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -557,16 +615,22 @@ export const CashFlowPage: React.FC = () => {
                     <div className="py-4 px-6 flex items-center justify-between border-t">
                         <span className="text-sm text-gray-600">Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, processedTransactions.length)} de {processedTransactions.length}</span>
                         <div className="flex items-center space-x-2">
-                            <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="px-3 py-1 text-sm rounded-md border disabled:opacity-50">Anterior</button>
-                            <span className="text-sm text-gray-700">Página {currentPage} de {totalPages}</span>
-                            <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="px-3 py-1 text-sm rounded-md border disabled:opacity-50">Próximo</button>
+                            <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">Anterior</button>
+                            <span className="text-sm text-gray-700 font-medium">Página {currentPage} de {totalPages}</span>
+                            <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">Próximo</button>
                         </div>
                     </div>
                 )}
             </div>
             
             <NewTransactionModal isOpen={activeModal === 'new'} onClose={handleCloseModal} onSave={handleSaveTransaction} />
-            <TransactionDetailsModal isOpen={activeModal === 'details'} onClose={handleCloseModal} transaction={selectedTransaction} />
+            <TransactionDetailsModal 
+                isOpen={activeModal === 'details'} 
+                onClose={handleCloseModal} 
+                transaction={selectedTransaction} 
+                users={users}
+                appointments={appointments}
+            />
             <ConfirmPaymentModal isOpen={activeModal === 'confirm'} onClose={handleCloseModal} onConfirm={handleConfirmPayment} transaction={selectedTransaction} />
             <ConfirmationModal 
                 isOpen={activeModal === 'cancel'}

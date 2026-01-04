@@ -334,10 +334,10 @@ const ConfirmationModal: React.FC<{
                     <AlertTriangleIcon className={`h-6 w-6 ${isDestructive ? 'text-red-600' : 'text-blue-600'}`} />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mt-4">{title}</h2>
-                <p className="text-gray-600 my-4">{message}</p>
+                <p className="text-gray-600 my-4 text-sm">{message}</p>
                 <div className="flex justify-center space-x-4">
-                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-36 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
-                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-36 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 w-36 bg-gray-200 text-gray-800 font-semibold text-sm rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className={`px-6 py-2.5 w-36 text-white font-semibold text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 ${confirmButtonClasses}`}>{confirmText}</button>
                 </div>
             </div>
         </div>
@@ -605,24 +605,24 @@ export const ClientsPage: React.FC = () => {
                 </table>
                  {totalPages > 0 && (
                     <div className="py-4 px-6 flex items-center justify-between border-t border-gray-200">
-                        <span className="text-sm text-gray-600">
-                            Mostrando <span className="font-semibold">{Math.min(processedClients.length, (currentPage - 1) * itemsPerPage + 1)}</span> a <span className="font-semibold">{Math.min(currentPage * itemsPerPage, processedClients.length)}</span> de <span className="font-semibold">{processedClients.length}</span> resultados
+                        <span className="text-sm text-gray-600 font-medium">
+                            Mostrando <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-semibold">{Math.min(currentPage * itemsPerPage, processedClients.length)}</span> de <span className="font-semibold">{processedClients.length}</span> resultados
                         </span>
                         <div className="flex items-center space-x-2">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                 disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Anterior
                             </button>
-                            <span className="text-sm text-gray-700">
+                            <span className="text-sm text-gray-700 font-medium">
                                 Página {currentPage} de {totalPages}
                             </span>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Próximo
                             </button>

@@ -157,8 +157,6 @@ export const SERVICES: Service[] = [
   { id: 39, name: 'Pezinho', price: 10, duration: 10, status: 'active'},
 ];
 
-export const APPOINTMENTS: Appointment[] = [];
-
 const todayDate = new Date();
 const yesterdayDate = new Date();
 yesterdayDate.setDate(todayDate.getDate() - 1);
@@ -170,14 +168,23 @@ const startOfMonthDate = new Date(todayDate.getFullYear(), todayDate.getMonth(),
 
 const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
+export const APPOINTMENTS: Appointment[] = [
+    { id: 999001, barberId: 4, clientId: 2, serviceId: 3, date: "2026-04-01", startTime: '09:00', endTime: '10:00' },
+    { id: 999003, barberId: 2, clientId: 10, serviceId: 2, date: formatDate(todayDate), startTime: '10:30', endTime: '11:10' },
+    { id: 999004, barberId: 5, clientId: 11, serviceId: 1, date: formatDate(yesterdayDate), startTime: '14:00', endTime: '14:40' },
+    { id: 999005, barberId: 6, clientId: 12, serviceId: 1, date: formatDate(yesterdayDate), startTime: '16:00', endTime: '16:40' },
+    { id: 999006, barberId: 2, clientId: 12, serviceId: 21, date: "2026-01-03", startTime: '15:00', endTime: '16:00' },
+    { id: 999007, barberId: 3, clientId: 14, serviceId: 2, date: formatDate(lastWeekDate), startTime: '10:00', endTime: '10:40' },
+];
+
 export const TRANSACTIONS: Transaction[] = [
-    { id: '#ord001', name: 'Lionel Messi', description: 'Corte + Barba', date: formatDate(todayDate), value: 80.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Débito', completedBy: 'Natan Borges' },
+    { id: '#ord001', name: 'Lionel Messi', description: 'Corte + Barba', date: "2026-04-01", value: 80.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Débito', completedBy: 'Natan Borges', appointmentId: 999001 },
     { id: '#ord002', name: 'Aluguel', description: 'Pagamento do Aluguel', date: formatDate(todayDate), value: 1500.00, type: TransactionType.EXPENSE, status: 'Finalizado', method: 'Pix', completedBy: 'Natan Borges' },
-    { id: '#ord003', name: 'Cristiano Ronaldo', description: 'Corte', date: formatDate(todayDate), value: 50.00, type: TransactionType.INCOME, status: 'Pendente', method: 'Aguardando', completedBy: '' },
-    { id: '#ord004', name: 'Jilvan Jr', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Dinheiro', completedBy: 'Natan Borges' },
-    { id: '#ord005', name: 'LeBron James', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Pix', completedBy: 'Natan Borges' },
-    { id: '#ord006', name: 'LaMelo Ball', description: 'Pezinho', date: formatDate(dayBeforeYesterdayDate), value: 10.00, type: TransactionType.INCOME, status: 'Cancelado', method: 'N/A', completedBy: '' },
-    { id: '#ord007', name: 'Neymar Jr', description: 'Corte', date: formatDate(lastWeekDate), value: 50.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Crédito', completedBy: 'Natan Borges' },
+    { id: '#ord003', name: 'Cristiano Ronaldo', description: 'Corte', date: formatDate(todayDate), value: 50.00, type: TransactionType.INCOME, status: 'Pendente', method: 'Aguardando', completedBy: '', appointmentId: 999003 },
+    { id: '#ord004', name: 'Jilvan Jr', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Dinheiro', completedBy: 'Natan Borges', appointmentId: 999004 },
+    { id: '#ord005', name: 'LeBron James', description: 'Barba', date: formatDate(yesterdayDate), value: 30.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Pix', completedBy: 'Natan Borges', appointmentId: 999005 },
+    { id: '#ord038', name: 'LeBron James', description: 'Corte (tamanho único-careca) + barba c/ barboterapia e hidratação', date: "2026-01-03", value: 155.00, type: TransactionType.INCOME, status: 'Cancelado', method: 'N/A', completedBy: 'Natan Borges', appointmentId: 999006 },
+    { id: '#ord007', name: 'Neymar Jr', description: 'Corte', date: formatDate(lastWeekDate), value: 50.00, type: TransactionType.INCOME, status: 'Finalizado', method: 'Cartão de Crédito', completedBy: 'Natan Borges', appointmentId: 999007 },
     { id: '#ord008', date: formatDate(lastWeekDate), name: 'Harry Kane', description: 'Serviço XYZ', method: 'Cartão de Crédito', type: TransactionType.INCOME, value: 49.90, status: 'Finalizado', completedBy: 'Natan Borges' },
     { id: '#ord009', date: formatDate(startOfMonthDate), name: 'Renato Torres', description: 'Serviço ABC', method: 'Cartão de Débito', type: TransactionType.INCOME, value: 49.90, status: 'Finalizado', completedBy: 'Natan Borges' },
     { id: '#ord010', date: formatDate(todayDate), name: 'Yago Oproprio', description: 'Serviço TTT', method: 'Dinheiro', type: TransactionType.INCOME, value: 75.00, status: 'Finalizado', completedBy: 'Natan Borges' },
